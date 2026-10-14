@@ -1,8 +1,7 @@
 import React from 'react';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { BRANDS } from '@/config/brands';
-import { BrandKey } from '@/types/scout';
+import { resolveServerBrand } from '@/config/brands';
 import { SEO_PAGES } from '@/config/seo-pages';
 import { SeoPageClient } from '@/components/seo-page-client';
 
@@ -32,7 +31,8 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
     };
   }
 
-  const brandKey = (sParams.brand as BrandKey) || 'autozglowy';
+  const brand = await resolveServerBrand(sParams.brand);
+  const brandKey = brand.id;
   const isZdajAuto = brandKey === 'zdajauto';
   const domain = isZdajAuto ? 'zdajauto.pl' : 'autozglowy.pl';
 
@@ -103,8 +103,8 @@ export default async function SeoPage({ params, searchParams }: PageProps) {
     notFound();
   }
 
-  const brandKey = (sParams.brand as BrandKey) || 'autozglowy';
-  const brand = BRANDS[brandKey] || BRANDS.autozglowy;
+  const brand = await resolveServerBrand(sParams.brand);
+  const brandKey = brand.id;
   const isZdajAuto = brandKey === 'zdajauto';
   const siteUrl = isZdajAuto ? 'https://zdajauto.pl' : 'https://autozglowy.pl';
   const canonicalUrl = `${siteUrl}/${slug}`;

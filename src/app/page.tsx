@@ -1,7 +1,6 @@
 import React, { Suspense } from 'react';
 import type { Metadata } from 'next';
-import { BRANDS } from '@/config/brands';
-import { BrandKey } from '@/types/scout';
+import { resolveServerBrand } from '@/config/brands';
 import { ScoutClientApp } from '@/components/scout-client-app';
 
 interface PageProps {
@@ -12,7 +11,8 @@ interface PageProps {
 
 export async function generateMetadata({ searchParams }: PageProps): Promise<Metadata> {
   const params = await searchParams;
-  const brandKey = (params.brand as BrandKey) || 'autozglowy';
+  const brand = await resolveServerBrand(params.brand);
+  const brandKey = brand.id;
   const isZdajAuto = brandKey === 'zdajauto';
 
   const title = isZdajAuto
@@ -89,8 +89,8 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
 
 export default async function Page({ searchParams }: PageProps) {
   const params = await searchParams;
-  const brandKey = (params.brand as BrandKey) || 'autozglowy';
-  const brand = BRANDS[brandKey] || BRANDS.autozglowy;
+  const brand = await resolveServerBrand(params.brand);
+  const brandKey = brand.id;
   const isZdajAuto = brandKey === 'zdajauto';
 
   const siteUrl = isZdajAuto ? 'https://zdajauto.pl' : 'https://autozglowy.pl';

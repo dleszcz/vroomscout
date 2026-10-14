@@ -210,3 +210,34 @@ export function resolveBrandFromLocation(
 
   return BRANDS.autozglowy;
 }
+
+export async function resolveServerBrand(
+  searchBrand?: string | null
+): Promise<BrandConfig> {
+  if (searchBrand && searchBrand in BRANDS) {
+    return BRANDS[searchBrand as BrandKey];
+  }
+
+  try {
+    const { headers } = await import('next/headers');
+    const headersList = await headers();
+    const host = headersList.get('host') || headersList.get('x-forwarded-host') || '';
+    const lower = host.toLowerCase();
+    if (lower.includes('zdajauto')) {
+      return BRANDS.zdajauto;
+    }
+    if (lower.includes('autozglowy')) {
+      return BRANDS.autozglowy;
+    }
+  } catch {
+    // Fallback if headers() cannot be called
+  }
+
+  const defaultEnv = process.env.NEXT_PUBLIC_DEFAULT_BRAND;
+  if (defaultEnv && defaultEnv in BRANDS) {
+    return BRANDS[defaultEnv as BrandKey];
+  }
+
+  return BRANDS.autozglowy;
+}
+
