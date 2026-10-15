@@ -4,6 +4,8 @@ import fs from 'fs';
 import path from 'path';
 import { checkIpRateLimit, validatePhoneNumber } from '@/lib/anti-spam';
 
+export const maxDuration = 30;
+
 function parseDeviceInfo(ua: string = '') {
   let deviceType = 'Komputer (Desktop)';
   let os = 'Nieznany';
@@ -93,7 +95,6 @@ export async function POST(req: NextRequest) {
       consentPhoneContact,
       accessToken,
       photoUrls = [],
-      base64Photos = [],
       userAgent,
     } = body;
 
@@ -282,20 +283,6 @@ export async function POST(req: NextRequest) {
 
     if (resendApiKey) {
       try {
-        const attachments: Array<{ filename: string; content: string }> = [];
-
-        if (Array.isArray(base64Photos) && base64Photos.length > 0) {
-          base64Photos.forEach((dataUrl: string, idx: number) => {
-            const rawContent = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
-            if (rawContent && rawContent.length < 5_000_000) {
-              attachments.push({
-                filename: `auto-scout-${idx + 1}.webp`,
-                content: rawContent,
-              });
-            }
-          });
-        }
-
         const isZdajAuto = sourceDomain?.toLowerCase().includes('zdajauto');
         // Żółty (#fdac04 / #facc15) dla AutoZglowy, fiolet (#7c3aed) dla ZdajAuto
         const brandBgColor = isZdajAuto ? '#7c3aed' : '#fdac04';
@@ -463,7 +450,6 @@ export async function POST(req: NextRequest) {
           to: [notificationEmail],
           subject: subject,
           html: emailHtml,
-          attachments: attachments.length > 0 ? attachments : undefined,
         };
 
         const res = await fetch('https://api.resend.com/emails', {

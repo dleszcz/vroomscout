@@ -100,6 +100,7 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
   const makeRef = useRef<HTMLDivElement>(null);
   const modelRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const wizardCardRef = useRef<HTMLDivElement>(null);
 
   const totalSteps = 4;
 
@@ -288,7 +289,12 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
       setErrorMsg(null);
       lastStepChangeAt.current = Date.now();
       setStep((prev) => Math.min(prev + 1, totalSteps));
-      window.scrollTo({ top: 120, behavior: 'smooth' });
+      if (wizardCardRef.current) {
+        const rect = wizardCardRef.current.getBoundingClientRect();
+        if (rect.top < 20) {
+          wizardCardRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
     }
   };
 
@@ -358,7 +364,7 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
   const progressPercent = Math.round((step / totalSteps) * 100);
 
   return (
-    <div className="w-full bg-white rounded-3xl border border-slate-200/90 shadow-xl overflow-hidden transition-all">
+    <div ref={wizardCardRef} className="w-full bg-white rounded-3xl border border-slate-200/90 shadow-xl overflow-hidden transition-all">
       {/* SUCCESS SCREEN */}
       {isSubmitted ? (
         <div className="p-6 sm:p-10 text-center space-y-6 animate-fade-in-scale">
@@ -571,7 +577,7 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
                           setShowMakeDropdown(true);
                         }}
                         onFocus={() => setShowMakeDropdown(true)}
-                        className="w-full h-12 sm:h-14 px-4 pr-10 rounded-2xl border-2 border-slate-200 bg-white text-slate-900 font-bold text-sm sm:text-base focus:border-slate-900 focus:outline-none transition-colors"
+                        className="w-full h-12 sm:h-14 px-4 pr-10 rounded-2xl border-2 border-slate-200 bg-white text-slate-900 font-bold text-base focus:border-slate-900 focus:outline-none transition-colors"
                       />
                       <ChevronDown className="w-5 h-5 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                     </div>
@@ -619,7 +625,7 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
                           setShowModelDropdown(true);
                         }}
                         onFocus={() => setShowModelDropdown(true)}
-                        className="w-full h-12 sm:h-14 px-4 pr-10 rounded-2xl border-2 border-slate-200 bg-white text-slate-900 font-bold text-sm sm:text-base focus:border-slate-900 focus:outline-none transition-colors"
+                        className="w-full h-12 sm:h-14 px-4 pr-10 rounded-2xl border-2 border-slate-200 bg-white text-slate-900 font-bold text-base focus:border-slate-900 focus:outline-none transition-colors"
                       />
                       <ChevronDown className="w-5 h-5 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                     </div>
@@ -652,7 +658,7 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
                     <select
                       value={formData.year}
                       onChange={(e) => updateField('year', e.target.value)}
-                      className="w-full h-12 sm:h-14 px-4 rounded-2xl border-2 border-slate-200 bg-white text-slate-900 font-bold text-sm sm:text-base focus:border-slate-900 focus:outline-none transition-colors cursor-pointer appearance-none"
+                      className="w-full h-12 sm:h-14 px-4 rounded-2xl border-2 border-slate-200 bg-white text-slate-900 font-bold text-base focus:border-slate-900 focus:outline-none transition-colors cursor-pointer appearance-none"
                     >
                       <option value="" disabled>
                         Wybierz rok produkcji
@@ -825,7 +831,7 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
                     placeholder="np. stuka dwumasa, świeci się check engine, auto stało rok w garażu, opony zimowe..."
                     value={formData.conditionNotes}
                     onChange={(e) => updateField('conditionNotes', e.target.value)}
-                    className="w-full p-3.5 rounded-2xl border-2 border-slate-200 text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:border-slate-900 focus:outline-none transition-colors"
+                    className="w-full p-3.5 rounded-2xl border-2 border-slate-200 text-base text-slate-800 placeholder-slate-400 focus:border-slate-900 focus:outline-none transition-colors"
                   />
                 </div>
               </div>
@@ -857,7 +863,7 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
                         placeholder="np. 15000 (lub zostaw puste)"
                         value={formData.expectedPriceAmount}
                         onChange={(e) => updateField('expectedPriceAmount', e.target.value)}
-                        className="w-full h-12 sm:h-14 px-4 pr-12 rounded-2xl border-2 border-slate-200 bg-white text-slate-900 font-bold text-sm sm:text-base focus:border-slate-900 focus:outline-none transition-colors"
+                        className="w-full h-12 sm:h-14 px-4 pr-12 rounded-2xl border-2 border-slate-200 bg-white text-slate-900 font-bold text-base focus:border-slate-900 focus:outline-none transition-colors"
                       />
                       <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 font-bold text-sm pointer-events-none">
                         PLN
@@ -1015,7 +1021,7 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
                         placeholder="np. Warszawa, Poznań, 87-800..."
                         value={formData.city}
                         onChange={(e) => updateField('city', e.target.value)}
-                        className="w-full h-12 sm:h-14 px-4 pl-11 rounded-2xl border-2 border-slate-200 bg-white text-slate-900 font-bold text-sm sm:text-base focus:border-slate-900 focus:outline-none transition-colors"
+                        className="w-full h-12 sm:h-14 px-4 pl-11 rounded-2xl border-2 border-slate-200 bg-white text-slate-900 font-bold text-base focus:border-slate-900 focus:outline-none transition-colors"
                       />
                       <MapPin className="w-5 h-5 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2 pointer-events-none" />
                     </div>
@@ -1036,7 +1042,7 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
                       placeholder="np. Tomasz (opcjonalnie)"
                       value={formData.name}
                       onChange={(e) => updateField('name', e.target.value)}
-                      className="w-full h-12 sm:h-14 px-4 rounded-2xl border-2 border-slate-200 bg-white text-slate-900 font-bold text-sm sm:text-base focus:border-slate-900 focus:outline-none transition-colors"
+                      className="w-full h-12 sm:h-14 px-4 rounded-2xl border-2 border-slate-200 bg-white text-slate-900 font-bold text-base focus:border-slate-900 focus:outline-none transition-colors"
                     />
                   </div>
                 </div>
