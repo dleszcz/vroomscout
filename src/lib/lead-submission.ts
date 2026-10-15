@@ -21,13 +21,10 @@ export async function submitScoutLead(
   const supabase = getSupabaseClient();
   const uploadedPhotoUrls: string[] = [];
 
-  // 1. Parallel high-speed upload to Supabase Storage with retry
+  // 1. Parallel high-speed upload to Supabase Storage
   if (supabase && photos.length > 0) {
     try {
-      const uploadWithRetry = async (
-        photo: CompressedPhoto,
-        attempt = 1
-      ): Promise<string | null> => {
+      const uploadSinglePhoto = async (photo: CompressedPhoto): Promise<string | null> => {
         const contentType = photo.blob.type || 'image/jpeg';
         const ext = contentType.includes('png')
           ? 'png'
@@ -37,7 +34,7 @@ export async function submitScoutLead(
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${ext}`;
         const filePath = `leads/${fileName}`;
 
-        const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000));
+        const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 2500));
         const uploadAction = (async (): Promise<string | null> => {
           try {
             const { error: uploadError } = await supabase.storage
@@ -51,24 +48,16 @@ export async function submitScoutLead(
               const { data } = supabase.storage.from('scout-photos').getPublicUrl(filePath);
               return data?.publicUrl || null;
             }
-            console.warn(`[Storage upload notice attempt ${attempt}]:`, uploadError.message);
           } catch (err) {
-            console.warn(`[Storage upload error attempt ${attempt}]:`, err);
+            console.warn('[Storage upload notice]:', err);
           }
           return null;
         })();
 
-        const result = await Promise.race([uploadAction, timeoutPromise]);
-        if (result) return result;
-
-        if (attempt < 2) {
-          await new Promise((r) => setTimeout(r, 200));
-          return uploadWithRetry(photo, attempt + 1);
-        }
-        return null;
+        return await Promise.race([uploadAction, timeoutPromise]);
       };
 
-      const results = await Promise.all(photos.map((p) => uploadWithRetry(p)));
+      const results = await Promise.all(photos.map((p) => uploadSinglePhoto(p)));
       for (const url of results) {
         if (url) uploadedPhotoUrls.push(url);
       }
@@ -106,7 +95,7 @@ export async function submitScoutLead(
         ? `${formData.expectedPriceAmount} zł (${formData.isNegotiable ? 'do negocjacji' : 'bez negocjacji'})`
         : formData.priceBracket || 'Czeka na propozycję wyceny';
 
-      const { data, error } = await supabase
+      const insertAction = supabase
         .from('scout_leads')
         .insert([
           {
@@ -133,9 +122,15 @@ export async function submitScoutLead(
         .select('id, access_token')
         .single();
 
+      const insertTimeout = new Promise<{ data: null; error: { message: string } }>((resolve) =>
+        setTimeout(() => resolve({ data: null, error: { message: 'Client insert timeout' } }), 2000)
+      );
+
+      const { data, error } = await Promise.race([insertAction, insertTimeout]);
+
       if (!error && data) {
         directInsertSuccess = true;
-        finalLeadId = data.id;
+        finalLeadId = (data as any).id;
       } else if (error) {
         console.warn('[Supabase client insert notice]:', error.message);
       }

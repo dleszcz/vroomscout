@@ -531,8 +531,13 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
             </div>
           </div>
 
-          {/* Form Body */}
-          <div className="p-4 sm:p-8 space-y-5 sm:space-y-6">
+          {/* Form Body - completely disabled and unfocusable during submission */}
+          <fieldset
+            disabled={isSubmitting}
+            className={`p-4 sm:p-8 space-y-5 sm:space-y-6 border-0 m-0 ${
+              isSubmitting ? 'pointer-events-none opacity-50 select-none' : ''
+            }`}
+          >
             {errorMsg && (
               <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-amber-800 text-xs sm:text-sm font-semibold flex items-center gap-2 animate-fade-in-scale">
                 <AlertTriangle className="w-4 h-4 shrink-0 text-amber-600" />
@@ -846,19 +851,19 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
                   </div>
                 </div>
 
-                {/* 3. OPIS USTEREK LUB WYPOSAŻENIA */}
-                <div>
-                  <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-700 mb-2">
-                    Dodatkowe informacje (opcjonalnie)
-                  </label>
-                  <textarea
-                    rows={2}
-                    placeholder="np. stuka dwumasa, świeci się check engine, auto stało rok w garażu, opony zimowe..."
-                    value={formData.conditionNotes}
-                    onChange={(e) => updateField('conditionNotes', e.target.value)}
-                    className="w-full p-3.5 rounded-2xl border-2 border-slate-200 text-base text-slate-800 placeholder-slate-400 focus:border-slate-900 focus:outline-none transition-colors"
-                  />
-                </div>
+                  {/* 3. OPIS USTEREK LUB WYPOSAŻENIA */}
+                  <div>
+                    <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-700 mb-2">
+                      Dodatkowe informacje (opcjonalnie)
+                    </label>
+                    <textarea
+                      rows={2}
+                      placeholder="np. stuka dwumasa, świeci się check engine, auto stało rok w garażu, opony zimowe..."
+                      value={formData.conditionNotes}
+                      onChange={(e) => updateField('conditionNotes', e.target.value)}
+                      className="w-full p-3 rounded-2xl border-2 border-slate-200 text-xs sm:text-sm text-slate-800 placeholder:text-xs sm:placeholder:text-sm placeholder:text-slate-400 focus:border-slate-900 focus:outline-none transition-colors resize-none leading-relaxed"
+                    />
+                  </div>
               </div>
             )}
 
@@ -1166,16 +1171,17 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
                 </div>
               </div>
             )}
-          </div>
-
+          </fieldset>
+ 
           {/* DOLNY PASEK NAWIGACJI DLA KROKÓW 1-4 */}
-          <div className="px-4 sm:px-8 py-3.5 sm:py-5 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between gap-3">
+          <div className="px-4 sm:px-8 py-3.5 sm:py-5 bg-slate-50/80 border-t border-slate-100 flex items-center justify-between gap-3 relative">
             {step > 1 ? (
               <button
                 key="wizard-prev-btn"
                 type="button"
                 onClick={handlePrev}
-                className="inline-flex items-center gap-1.5 px-4 py-3 rounded-2xl border border-slate-300 text-slate-700 text-xs sm:text-sm font-bold hover:bg-slate-100 transition-colors cursor-pointer"
+                disabled={isSubmitting}
+                className="inline-flex items-center gap-1.5 px-4 py-3 rounded-2xl border border-slate-300 text-slate-700 text-xs sm:text-sm font-bold hover:bg-slate-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors cursor-pointer"
               >
                 <ArrowLeft className="w-4 h-4" />
                 <span>Wstecz</span>
@@ -1191,7 +1197,8 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
                 key="wizard-next-btn"
                 type="button"
                 onClick={handleNext}
-                className={`inline-flex items-center gap-2 px-6 sm:px-8 py-3.5 rounded-2xl ${brand.primaryBtnTextClass || 'text-white'} font-extrabold text-sm sm:text-base shadow-md ${brand.primaryBgClass} ${brand.primaryHoverClass} transition-all active:scale-98 cursor-pointer ml-auto`}
+                disabled={isSubmitting}
+                className={`inline-flex items-center gap-2 px-6 sm:px-8 py-3.5 rounded-2xl ${brand.primaryBtnTextClass || 'text-white'} font-extrabold text-sm sm:text-base shadow-md ${brand.primaryBgClass} ${brand.primaryHoverClass} disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-98 cursor-pointer ml-auto`}
               >
                 <span>Dalej</span>
                 <ArrowRight className="w-4 h-4" />
@@ -1202,7 +1209,7 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
                 type="button"
                 onClick={handleSubmit}
                 disabled={isSubmitting}
-                className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl ${brand.primaryBtnTextClass || 'text-white'} font-extrabold text-sm sm:text-base shadow-lg ${brand.primaryBgClass} ${brand.primaryHoverClass} disabled:opacity-50 transition-all active:scale-98 cursor-pointer ml-auto`}
+                className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 px-8 py-4 rounded-2xl ${brand.primaryBtnTextClass || 'text-white'} font-extrabold text-sm sm:text-base shadow-lg ${brand.primaryBgClass} ${brand.primaryHoverClass} disabled:opacity-50 disabled:cursor-not-allowed transition-all active:scale-98 cursor-pointer ml-auto`}
               >
                 {isSubmitting ? (
                   <>
@@ -1218,6 +1225,25 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
               </button>
             )}
           </div>
+
+          {/* Submitting Loading Overlay */}
+          {isSubmitting && (
+            <div className="absolute inset-0 bg-white/75 backdrop-blur-[2px] z-30 flex flex-col items-center justify-center gap-3 p-6 animate-fade-in-scale">
+              <div
+                className={`w-14 h-14 rounded-2xl ${brand.lightBgClass} ${brand.primaryTextClass} flex items-center justify-center shadow-md`}
+              >
+                <RefreshCw className="w-7 h-7 animate-spin" />
+              </div>
+              <div className="text-center space-y-1">
+                <p className="text-base sm:text-lg font-black text-slate-900">
+                  Przetwarzanie wyceny...
+                </p>
+                <p className="text-xs sm:text-sm text-slate-500 font-medium">
+                  Zapisujemy zgłoszenie i generujemy kartę dla partnera
+                </p>
+              </div>
+            </div>
+          )}
         </form>
       )}
     </div>

@@ -240,49 +240,38 @@ export async function POST(req: NextRequest) {
       // ignore local file backup error on read-only environments
     }
 
-    // 3. Parallel external notifications: Google Sheets and Resend Email
-    const externalTasks: Promise<unknown>[] = [];
-
-    // A. Google Sheets / Google Drive Integration via Webhook
-    if (googleSheetsWebhookUrl) {
-      externalTasks.push(
-        fetch(googleSheetsWebhookUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            environment: currentEnv,
-            leadId,
-            timestamp: new Date().toLocaleString('pl-PL', { timeZone: 'Europe/Warsaw' }),
-            sourceDomain: sourceDomain || 'AutoZglowy.pl',
-            category: category || 'osobowe',
-            make: make || '',
-            model: model || '',
-            vehicle: vehicleTitle,
-            year: year || '',
-            fuel: fuel || '',
-            condition: condition || '',
-            noInsurance: noInsurance ? 'TAK (brak OC - laweta)' : 'NIE (OC ważne)',
-            noMot: noMot ? 'TAK (brak przeglądu)' : 'NIE (przegląd ważny)',
-            expectedPrice: priceDisplayString,
-            isNegotiable: isNegotiable !== false ? 'TAK' : 'NIE',
-            conditionNotes: conditionNotes || '',
-            city: city || '',
-            phone: phoneCheck.formattedPhone,
-            name: name || 'Brak',
-            photosCount: photoUrls.length,
-            photoUrls: photoUrls.join('\n'),
-            deviceType: deviceInfo.deviceType,
-            deviceSummary: deviceInfo.summary,
-            browser: deviceInfo.browser,
-            os: deviceInfo.os,
-            fillTimeSec: fillTimeSec,
-            tokenUrl: partnerLeadUrl || (accessToken ? `/lead/${accessToken}` : ''),
-          }),
-        })
-          .then(() => console.log('📊 [VroomScout] Lead pomyślnie zapisany w Google Sheets / Google Drive'))
-          .catch((gErr) => console.warn('[Google Sheets webhook error]:', gErr))
-      );
-    }
+    // 3. Prepare background payloads for Google Sheets and Resend Email
+    const googleSheetsPayload = googleSheetsWebhookUrl
+      ? {
+          environment: currentEnv,
+          leadId,
+          timestamp: new Date().toLocaleString('pl-PL', { timeZone: 'Europe/Warsaw' }),
+          sourceDomain: sourceDomain || 'AutoZglowy.pl',
+          category: category || 'osobowe',
+          make: make || '',
+          model: model || '',
+          vehicle: vehicleTitle,
+          year: year || '',
+          fuel: fuel || '',
+          condition: condition || '',
+          noInsurance: noInsurance ? 'TAK (brak OC - laweta)' : 'NIE (OC ważne)',
+          noMot: noMot ? 'TAK (brak przeglądu)' : 'NIE (przegląd ważny)',
+          expectedPrice: priceDisplayString,
+          isNegotiable: isNegotiable !== false ? 'TAK' : 'NIE',
+          conditionNotes: conditionNotes || '',
+          city: city || '',
+          phone: phoneCheck.formattedPhone,
+          name: name || 'Brak',
+          photosCount: photoUrls.length,
+          photoUrls: photoUrls.join('\n'),
+          deviceType: deviceInfo.deviceType,
+          deviceSummary: deviceInfo.summary,
+          browser: deviceInfo.browser,
+          os: deviceInfo.os,
+          fillTimeSec: fillTimeSec,
+          tokenUrl: partnerLeadUrl || (accessToken ? `/lead/${accessToken}` : ''),
+        }
+      : null;
 
     // B. Resend Email notification
     const resendApiKey = process.env.RESEND_API_KEY;
@@ -457,7 +446,8 @@ export async function POST(req: NextRequest) {
         html: emailHtml,
       };
 
-      externalTasks.push(
+      // Resend payload ready for background dispatch
+      const resendTask = () =>
         fetch('https://api.resend.com/emails', {
           method: 'POST',
           headers: {
@@ -465,6 +455,7 @@ export async function POST(req: NextRequest) {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify(resendPayload),
+          signal: AbortSignal.timeout(6000),
         })
           .then(async (res) => {
             if (!res.ok) {
@@ -474,13 +465,40 @@ export async function POST(req: NextRequest) {
               console.log(`📧 [VroomScout] Powiadomienie e-mail wysłane do ${notificationEmail}`);
             }
           })
-          .catch((mailErr) => console.warn('[Resend send failed]:', mailErr))
-      );
-    }
+          .catch((mailErr) => console.warn('[Resend send failed]:', mailErr));
 
-    if (externalTasks.length > 0) {
       after(async () => {
-        await Promise.allSettled(externalTasks);
+        const backgroundTasks: Promise<unknown>[] = [];
+
+        if (googleSheetsWebhookUrl && googleSheetsPayload) {
+          backgroundTasks.push(
+            fetch(googleSheetsWebhookUrl, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(googleSheetsPayload),
+              signal: AbortSignal.timeout(6000),
+            })
+              .then(() => console.log('📊 [VroomScout] Lead pomyślnie zapisany w Google Sheets / Google Drive'))
+              .catch((gErr) => console.warn('[Google Sheets webhook error]:', gErr))
+          );
+        }
+
+        backgroundTasks.push(resendTask());
+        await Promise.allSettled(backgroundTasks);
+      });
+    } else if (googleSheetsWebhookUrl && googleSheetsPayload) {
+      after(async () => {
+        try {
+          await fetch(googleSheetsWebhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(googleSheetsPayload),
+            signal: AbortSignal.timeout(6000),
+          });
+          console.log('📊 [VroomScout] Lead zapisany w Google Sheets');
+        } catch (gErr) {
+          console.warn('[Google Sheets error]:', gErr);
+        }
       });
     }
 
