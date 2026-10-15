@@ -50,11 +50,12 @@ export async function compressImageClientSide(
         ctx.imageSmoothingQuality = 'high';
         ctx.drawImage(img, 0, 0, width, height);
 
-        // Convert to WebP format
+        // Convert to high-efficiency JPEG format (100% universal support across iOS Safari, Android, and Desktop)
+        // Avoids WebKit Safari canvas fallback to uncompressed 2MB PNG
         canvas.toBlob(
           (blob) => {
             if (!blob) {
-              return reject(new Error('Błąd kompresji obrazu do formatu WebP'));
+              return reject(new Error('Błąd kompresji obrazu'));
             }
 
             const compressedSizeKb = Math.round(blob.size / 1024);
@@ -67,11 +68,11 @@ export async function compressImageClientSide(
               previewUrl,
               originalSizeKb,
               compressedSizeKb,
-              fileName: file.name.replace(/\.[^/.]+$/, '') + '.webp',
+              fileName: file.name.replace(/\.[^/.]+$/, '') + '.jpg',
             });
           },
-          'image/webp',
-          quality
+          'image/jpeg',
+          quality || 0.8
         );
       };
 

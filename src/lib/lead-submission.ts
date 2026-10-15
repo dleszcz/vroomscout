@@ -21,28 +21,47 @@ export async function submitScoutLead(
   const supabase = getSupabaseClient();
   const uploadedPhotoUrls: string[] = [];
 
-  // 1. Parallel high-speed upload to Supabase Storage
+  // 1. Parallel high-speed upload to Supabase Storage with retry
   if (supabase && photos.length > 0) {
     try {
-      const uploadPromises = photos.map(async (photo) => {
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.webp`;
+      const uploadWithRetry = async (
+        photo: CompressedPhoto,
+        attempt = 1
+      ): Promise<string | null> => {
+        const contentType = photo.blob.type || 'image/jpeg';
+        const ext = contentType.includes('png')
+          ? 'png'
+          : contentType.includes('webp')
+          ? 'webp'
+          : 'jpg';
+        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${ext}`;
         const filePath = `leads/${fileName}`;
-        const { error: uploadError } = await supabase.storage
-          .from('scout-photos')
-          .upload(filePath, photo.blob, {
-            contentType: 'image/webp',
-            upsert: false,
-          });
 
-        if (!uploadError) {
-          const { data } = supabase.storage.from('scout-photos').getPublicUrl(filePath);
-          return data?.publicUrl || null;
+        try {
+          const { error: uploadError } = await supabase.storage
+            .from('scout-photos')
+            .upload(filePath, photo.blob, {
+              contentType,
+              upsert: false,
+            });
+
+          if (!uploadError) {
+            const { data } = supabase.storage.from('scout-photos').getPublicUrl(filePath);
+            return data?.publicUrl || null;
+          }
+          console.warn(`[Storage upload notice attempt ${attempt}]:`, uploadError.message);
+        } catch (err) {
+          console.warn(`[Storage upload error attempt ${attempt}]:`, err);
         }
-        console.warn('[Storage upload notice]:', uploadError.message);
-        return null;
-      });
 
-      const results = await Promise.all(uploadPromises);
+        if (attempt < 2) {
+          await new Promise((r) => setTimeout(r, 300));
+          return uploadWithRetry(photo, attempt + 1);
+        }
+        return null;
+      };
+
+      const results = await Promise.all(photos.map((p) => uploadWithRetry(p)));
       for (const url of results) {
         if (url) uploadedPhotoUrls.push(url);
       }

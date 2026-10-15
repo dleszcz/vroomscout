@@ -101,6 +101,8 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
   const modelRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const wizardCardRef = useRef<HTMLDivElement>(null);
+  const consentsSectionRef = useRef<HTMLDivElement>(null);
+  const [consentHighlight, setConsentHighlight] = useState<boolean>(false);
 
   const totalSteps = 4;
 
@@ -157,6 +159,13 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
 
   const updateField = <K extends keyof LeadFormState>(field: K, value: LeadFormState[K]) => {
     setErrorMsg(null);
+    if (field === 'consentDataSharing' || field === 'consentPhoneContact') {
+      const otherConsent =
+        field === 'consentDataSharing' ? formData.consentPhoneContact : formData.consentDataSharing;
+      if (value && otherConsent) {
+        setConsentHighlight(false);
+      }
+    }
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
@@ -201,13 +210,24 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
     const selectedFiles = Array.from(e.target.files).slice(0, remainingSlots);
 
     try {
-      const compressedList: CompressedPhoto[] = [];
-      for (const file of selectedFiles) {
-        if (!file.type.startsWith('image/')) continue;
-        const compressed = await compressImageClientSide(file);
-        compressedList.push(compressed);
+      const compressionPromises = selectedFiles.map(async (file) => {
+        if (!file.type.startsWith('image/')) return null;
+        try {
+          return await compressImageClientSide(file);
+        } catch (err) {
+          console.warn('Failed to compress file:', file.name, err);
+          return null;
+        }
+      });
+
+      const results = await Promise.all(compressionPromises);
+      const validPhotos = results.filter((p): p is CompressedPhoto => p !== null);
+
+      if (validPhotos.length > 0) {
+        setPhotos((prev) => [...prev, ...validPhotos]);
+      } else if (selectedFiles.length > 0) {
+        setErrorMsg('Nie udało się przetworzyć wybranych plików graficznych. Spróbuj wybrać inne zdjęcia.');
       }
-      setPhotos((prev) => [...prev, ...compressedList]);
     } catch (err) {
       console.error('Photo compression error:', err);
       setErrorMsg('Wystąpił problem podczas przetwarzania zdjęć. Spróbuj ponownie.');
@@ -271,7 +291,11 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
         return false;
       }
       if (!formData.consentDataSharing || !formData.consentPhoneContact) {
-        setErrorMsg('Zaznacz wymagane zgody formalne, aby partner mógł przedstawić bezpłatną wycenę.');
+        setConsentHighlight(true);
+        setErrorMsg('Zaznacz wymagane zgody formalne poniżej, aby partner mógł przedstawić bezpłatną wycenę.');
+        if (consentsSectionRef.current) {
+          consentsSectionRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
         return false;
       }
       return true;
@@ -358,6 +382,7 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
     setModelQuery('');
     setHoneypot('');
     formStartedAt.current = Date.now();
+    setConsentHighlight(false);
     localStorage.removeItem('vroom_scout_draft');
   };
 
@@ -1048,64 +1073,121 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
                 </div>
 
                 {/* ZGODY PRAWNE (RODO / PKE) */}
-                <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200/90 space-y-3.5">
+                <div
+                  ref={consentsSectionRef}
+                  className={`p-4 sm:p-5 rounded-2xl border transition-all ${
+                    consentHighlight
+                      ? 'bg-red-50/50 border-red-400 ring-2 ring-red-200 shadow-md'
+                      : 'bg-slate-50 border-slate-200/90'
+                  } space-y-3.5`}
+                >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
-                      <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                      <ShieldCheck
+                        className={`w-4 h-4 ${
+                          consentHighlight ? 'text-red-600 animate-pulse' : 'text-emerald-600'
+                        }`}
+                      />
                       <span>Zgody prawne i ochrona danych (RODO / PKE)</span>
+                      {consentHighlight && (
+                        <span className="ml-1 text-[11px] font-extrabold text-red-600 bg-red-100 px-2 py-0.5 rounded-md">
+                          Wymagane
+                        </span>
+                      )}
                     </div>
                     {(!formData.consentDataSharing || !formData.consentPhoneContact) && (
                       <button
                         type="button"
                         onClick={() => {
                           setErrorMsg(null);
+                          setConsentHighlight(false);
                           setFormData((prev) => ({
                             ...prev,
                             consentDataSharing: true,
                             consentPhoneContact: true,
                           }));
                         }}
-                        className="text-[11px] font-bold text-slate-700 hover:text-black underline cursor-pointer"
+                        className={
+                          consentHighlight
+                            ? 'text-xs font-black text-white bg-red-600 hover:bg-red-700 px-3 py-1 rounded-xl shadow-sm transition-all cursor-pointer'
+                            : 'text-[11px] font-bold text-slate-700 hover:text-black underline cursor-pointer'
+                        }
                       >
-                        Zaznacz obie zgody
+                        Zaznacz obie zgody ✓
                       </button>
                     )}
                   </div>
 
-                  <label className="flex items-start gap-3 cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      checked={formData.consentDataSharing}
-                      onChange={(e) => updateField('consentDataSharing', e.target.checked)}
-                      className="mt-1 h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900 shrink-0"
-                    />
-                    <span className="text-xs text-slate-600 leading-relaxed">
-                      Zgadzam się na przekazanie powyższych danych do jednego zweryfikowanego Partnera w celu sporządzenia bezpłatnej propozycji odkupu auta, zgodnie z{' '}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          onOpenLegal('privacy');
-                        }}
-                        className="underline font-bold text-slate-900 hover:text-black cursor-pointer"
-                      >
-                        Polityką Prywatności
-                      </button>
-                      .
-                    </span>
-                  </label>
+                  {/* 1. ZGODA NA PRZEKAZANIE DANYCH */}
+                  <div
+                    className={`transition-all rounded-xl ${
+                      consentHighlight && !formData.consentDataSharing
+                        ? 'p-3 bg-red-100/70 border-2 border-red-500 ring-2 ring-red-200'
+                        : 'p-1'
+                    }`}
+                  >
+                    <label className="flex items-start gap-3 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={formData.consentDataSharing}
+                        onChange={(e) => updateField('consentDataSharing', e.target.checked)}
+                        className={`mt-1 h-4 w-4 rounded shrink-0 cursor-pointer ${
+                          consentHighlight && !formData.consentDataSharing
+                            ? 'border-red-500 text-red-600 ring-2 ring-red-400'
+                            : 'border-slate-300 text-slate-900 focus:ring-slate-900'
+                        }`}
+                      />
+                      <span className="text-xs text-slate-700 leading-relaxed">
+                        Zgadzam się na przekazanie powyższych danych do jednego zweryfikowanego Partnera w celu sporządzenia bezpłatnej propozycji odkupu auta, zgodnie z{' '}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            onOpenLegal('privacy');
+                          }}
+                          className="underline font-bold text-slate-900 hover:text-black cursor-pointer"
+                        >
+                          Polityką Prywatności
+                        </button>
+                        .
+                      </span>
+                    </label>
+                    {consentHighlight && !formData.consentDataSharing && (
+                      <p className="text-[11px] font-bold text-red-700 mt-1.5 pl-7 flex items-center gap-1.5">
+                        <span>⚠️</span> Ta zgoda jest wymagana, aby partner mógł otrzymać Twoje zgłoszenie.
+                      </p>
+                    )}
+                  </div>
 
-                  <label className="flex items-start gap-3 cursor-pointer group">
-                    <input
-                      type="checkbox"
-                      checked={formData.consentPhoneContact}
-                      onChange={(e) => updateField('consentPhoneContact', e.target.checked)}
-                      className="mt-1 h-4 w-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900 shrink-0"
-                    />
-                    <span className="text-xs text-slate-600 leading-relaxed">
-                      Wyrażam zgodę na kontakt telefoniczny oraz SMS w celu przedstawienia wyceny pojazdu (zgodnie z Prawem Komunikacji Elektronicznej).
-                    </span>
-                  </label>
+                  {/* 2. ZGODA NA KONTAKT TELEFONICZNY / SMS */}
+                  <div
+                    className={`transition-all rounded-xl ${
+                      consentHighlight && !formData.consentPhoneContact
+                        ? 'p-3 bg-red-100/70 border-2 border-red-500 ring-2 ring-red-200'
+                        : 'p-1'
+                    }`}
+                  >
+                    <label className="flex items-start gap-3 cursor-pointer group">
+                      <input
+                        type="checkbox"
+                        checked={formData.consentPhoneContact}
+                        onChange={(e) => updateField('consentPhoneContact', e.target.checked)}
+                        className={`mt-1 h-4 w-4 rounded shrink-0 cursor-pointer ${
+                          consentHighlight && !formData.consentPhoneContact
+                            ? 'border-red-500 text-red-600 ring-2 ring-red-400'
+                            : 'border-slate-300 text-slate-900 focus:ring-slate-900'
+                        }`}
+                      />
+                      <span className="text-xs text-slate-700 leading-relaxed">
+                        Wyrażam zgodę na kontakt telefoniczny oraz SMS w celu przedstawienia wyceny pojazdu (zgodnie z Prawem Komunikacji Elektronicznej).
+                      </span>
+                    </label>
+                    {consentHighlight && !formData.consentPhoneContact && (
+                      <p className="text-[11px] font-bold text-red-700 mt-1.5 pl-7 flex items-center gap-1.5">
+                        <span>⚠️</span> Wymagana zgoda na kontakt w celu przedstawienia kwoty odkupu.
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             )}
