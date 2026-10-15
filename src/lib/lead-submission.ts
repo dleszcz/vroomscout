@@ -37,25 +37,32 @@ export async function submitScoutLead(
         const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${ext}`;
         const filePath = `leads/${fileName}`;
 
-        try {
-          const { error: uploadError } = await supabase.storage
-            .from('scout-photos')
-            .upload(filePath, photo.blob, {
-              contentType,
-              upsert: false,
-            });
+        const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 5000));
+        const uploadAction = (async (): Promise<string | null> => {
+          try {
+            const { error: uploadError } = await supabase.storage
+              .from('scout-photos')
+              .upload(filePath, photo.blob, {
+                contentType,
+                upsert: false,
+              });
 
-          if (!uploadError) {
-            const { data } = supabase.storage.from('scout-photos').getPublicUrl(filePath);
-            return data?.publicUrl || null;
+            if (!uploadError) {
+              const { data } = supabase.storage.from('scout-photos').getPublicUrl(filePath);
+              return data?.publicUrl || null;
+            }
+            console.warn(`[Storage upload notice attempt ${attempt}]:`, uploadError.message);
+          } catch (err) {
+            console.warn(`[Storage upload error attempt ${attempt}]:`, err);
           }
-          console.warn(`[Storage upload notice attempt ${attempt}]:`, uploadError.message);
-        } catch (err) {
-          console.warn(`[Storage upload error attempt ${attempt}]:`, err);
-        }
+          return null;
+        })();
+
+        const result = await Promise.race([uploadAction, timeoutPromise]);
+        if (result) return result;
 
         if (attempt < 2) {
-          await new Promise((r) => setTimeout(r, 300));
+          await new Promise((r) => setTimeout(r, 200));
           return uploadWithRetry(photo, attempt + 1);
         }
         return null;

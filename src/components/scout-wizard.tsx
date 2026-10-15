@@ -1075,25 +1075,16 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
                 {/* ZGODY PRAWNE (RODO / PKE) */}
                 <div
                   ref={consentsSectionRef}
-                  className={`p-4 sm:p-5 rounded-2xl border transition-all ${
+                  className={`p-4 sm:p-5 rounded-2xl bg-slate-50 border transition-all ${
                     consentHighlight
-                      ? 'bg-red-50/50 border-red-400 ring-2 ring-red-200 shadow-md'
-                      : 'bg-slate-50 border-slate-200/90'
+                      ? 'border-amber-300 ring-2 ring-amber-100/80 shadow-xs'
+                      : 'border-slate-200/90'
                   } space-y-3.5`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
-                      <ShieldCheck
-                        className={`w-4 h-4 ${
-                          consentHighlight ? 'text-red-600 animate-pulse' : 'text-emerald-600'
-                        }`}
-                      />
+                      <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
                       <span>Zgody prawne i ochrona danych (RODO / PKE)</span>
-                      {consentHighlight && (
-                        <span className="ml-1 text-[11px] font-extrabold text-red-600 bg-red-100 px-2 py-0.5 rounded-md">
-                          Wymagane
-                        </span>
-                      )}
                     </div>
                     {(!formData.consentDataSharing || !formData.consentPhoneContact) && (
                       <button
@@ -1107,33 +1098,23 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
                             consentPhoneContact: true,
                           }));
                         }}
-                        className={
-                          consentHighlight
-                            ? 'text-xs font-black text-white bg-red-600 hover:bg-red-700 px-3 py-1 rounded-xl shadow-sm transition-all cursor-pointer'
-                            : 'text-[11px] font-bold text-slate-700 hover:text-black underline cursor-pointer'
-                        }
+                        className="text-[11px] font-bold text-slate-700 hover:text-black underline cursor-pointer"
                       >
-                        Zaznacz obie zgody ✓
+                        Zaznacz obie zgody
                       </button>
                     )}
                   </div>
 
                   {/* 1. ZGODA NA PRZEKAZANIE DANYCH */}
-                  <div
-                    className={`transition-all rounded-xl ${
-                      consentHighlight && !formData.consentDataSharing
-                        ? 'p-3 bg-red-100/70 border-2 border-red-500 ring-2 ring-red-200'
-                        : 'p-1'
-                    }`}
-                  >
+                  <div className="py-0.5">
                     <label className="flex items-start gap-3 cursor-pointer group">
                       <input
                         type="checkbox"
                         checked={formData.consentDataSharing}
                         onChange={(e) => updateField('consentDataSharing', e.target.checked)}
-                        className={`mt-1 h-4 w-4 rounded shrink-0 cursor-pointer ${
+                        className={`mt-1 h-4 w-4 rounded shrink-0 cursor-pointer transition-colors ${
                           consentHighlight && !formData.consentDataSharing
-                            ? 'border-red-500 text-red-600 ring-2 ring-red-400'
+                            ? 'border-amber-500 ring-2 ring-amber-200 text-slate-900'
                             : 'border-slate-300 text-slate-900 focus:ring-slate-900'
                         }`}
                       />
@@ -1149,43 +1130,37 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
                         >
                           Polityką Prywatności
                         </button>
-                        .
+                        . <span className="text-red-500">*</span>
                       </span>
                     </label>
                     {consentHighlight && !formData.consentDataSharing && (
-                      <p className="text-[11px] font-bold text-red-700 mt-1.5 pl-7 flex items-center gap-1.5">
-                        <span>⚠️</span> Ta zgoda jest wymagana, aby partner mógł otrzymać Twoje zgłoszenie.
-                      </p>
+                      <span className="text-[11px] font-medium text-amber-700 pl-7 block mt-1">
+                        * Wymagana zgoda formalna
+                      </span>
                     )}
                   </div>
 
                   {/* 2. ZGODA NA KONTAKT TELEFONICZNY / SMS */}
-                  <div
-                    className={`transition-all rounded-xl ${
-                      consentHighlight && !formData.consentPhoneContact
-                        ? 'p-3 bg-red-100/70 border-2 border-red-500 ring-2 ring-red-200'
-                        : 'p-1'
-                    }`}
-                  >
+                  <div className="py-0.5">
                     <label className="flex items-start gap-3 cursor-pointer group">
                       <input
                         type="checkbox"
                         checked={formData.consentPhoneContact}
                         onChange={(e) => updateField('consentPhoneContact', e.target.checked)}
-                        className={`mt-1 h-4 w-4 rounded shrink-0 cursor-pointer ${
+                        className={`mt-1 h-4 w-4 rounded shrink-0 cursor-pointer transition-colors ${
                           consentHighlight && !formData.consentPhoneContact
-                            ? 'border-red-500 text-red-600 ring-2 ring-red-400'
+                            ? 'border-amber-500 ring-2 ring-amber-200 text-slate-900'
                             : 'border-slate-300 text-slate-900 focus:ring-slate-900'
                         }`}
                       />
                       <span className="text-xs text-slate-700 leading-relaxed">
-                        Wyrażam zgodę na kontakt telefoniczny oraz SMS w celu przedstawienia wyceny pojazdu (zgodnie z Prawem Komunikacji Elektronicznej).
+                        Wyrażam zgodę na kontakt telefoniczny oraz SMS w celu przedstawienia wyceny pojazdu (zgodnie z Prawem Komunikacji Elektronicznej). <span className="text-red-500">*</span>
                       </span>
                     </label>
                     {consentHighlight && !formData.consentPhoneContact && (
-                      <p className="text-[11px] font-bold text-red-700 mt-1.5 pl-7 flex items-center gap-1.5">
-                        <span>⚠️</span> Wymagana zgoda na kontakt w celu przedstawienia kwoty odkupu.
-                      </p>
+                      <span className="text-[11px] font-medium text-amber-700 pl-7 block mt-1">
+                        * Wymagana zgoda na kontakt
+                      </span>
                     )}
                   </div>
                 </div>

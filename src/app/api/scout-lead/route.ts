@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import fs from 'fs';
 import path from 'path';
@@ -202,7 +202,11 @@ export async function POST(req: NextRequest) {
     const defaultLocalUrl = process.env.SCOUT_PARTNER_LOCAL_URL || 'http://localhost:3000';
     const defaultProdUrl = process.env.SCOUT_PARTNER_BASE_URL || 'https://scout.vroomdealer.pl';
 
-    const partnerBaseUrl = isLocal ? defaultLocalUrl : defaultProdUrl;
+    let partnerBaseUrl = isLocal ? defaultLocalUrl : defaultProdUrl;
+    // Guarantee scout.vroomdealer.pl is used for partner verification card on production
+    if (!isLocal && partnerBaseUrl.includes('vroomdealer.pl') && !partnerBaseUrl.includes('scout.')) {
+      partnerBaseUrl = 'https://scout.vroomdealer.pl';
+    }
     const partnerLeadUrl = accessToken ? `${partnerBaseUrl.replace(/\/$/, '')}/lead/${accessToken}` : '';
 
     // 2. Local persistent file backup (never lose a lead)
@@ -475,7 +479,9 @@ export async function POST(req: NextRequest) {
     }
 
     if (externalTasks.length > 0) {
-      await Promise.allSettled(externalTasks);
+      after(async () => {
+        await Promise.allSettled(externalTasks);
+      });
     }
 
     return NextResponse.json({
