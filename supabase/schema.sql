@@ -79,9 +79,18 @@ CREATE POLICY "Allow access by token" ON scout_leads
   USING (true);
 
 -- 5. Konfiguracja Bucketu Storage w Supabase:
--- Jeśli bucket 'scout-photos' nie istnieje, stwórz go w zakładce Storage jako Public Bucket:
--- INSERT INTO storage.buckets (id, name, public) VALUES ('scout-photos', 'scout-photos', true) ON CONFLICT (id) DO NOTHING;
--- Polityka dla bucketu 'scout-photos':
--- CREATE POLICY "Allow anon upload to scout-photos" ON storage.objects
---   FOR INSERT TO anon
---   WITH CHECK (bucket_id = 'scout-photos');
+INSERT INTO storage.buckets (id, name, public) 
+VALUES ('scout-photos', 'scout-photos', true) 
+ON CONFLICT (id) DO UPDATE SET public = true;
+
+-- Polityki dla bucketu 'scout-photos':
+DROP POLICY IF EXISTS "Allow anon upload to scout-photos" ON storage.objects;
+CREATE POLICY "Allow anon upload to scout-photos" ON storage.objects
+  FOR INSERT TO anon
+  WITH CHECK (bucket_id = 'scout-photos');
+
+DROP POLICY IF EXISTS "Allow public view scout-photos" ON storage.objects;
+CREATE POLICY "Allow public view scout-photos" ON storage.objects
+  FOR SELECT TO public
+  USING (bucket_id = 'scout-photos');
+
