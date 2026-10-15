@@ -1236,7 +1236,9 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
               </div>
               <div className="text-center space-y-1">
                 <p className="text-base sm:text-lg font-black text-slate-900">
-                  Przetwarzanie wyceny...
+                  {photos.length > 0
+                    ? `Wysyłanie wyceny i ${photos.length} ${photos.length === 1 ? 'zdjęcia' : 'zdjęć'}...`
+                    : 'Przetwarzanie wyceny...'}
                 </p>
                 <p className="text-xs sm:text-sm text-slate-500 font-medium">
                   Zapisujemy zgłoszenie i generujemy kartę dla partnera

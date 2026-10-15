@@ -24,17 +24,18 @@ export async function submitScoutLead(
   // 1. Parallel high-speed upload to Supabase Storage
   if (supabase && photos.length > 0) {
     try {
-      const uploadSinglePhoto = async (photo: CompressedPhoto): Promise<string | null> => {
+      const uploadSinglePhoto = async (photo: CompressedPhoto, index: number): Promise<string | null> => {
         const contentType = photo.blob.type || 'image/jpeg';
         const ext = contentType.includes('png')
           ? 'png'
           : contentType.includes('webp')
           ? 'webp'
           : 'jpg';
-        const fileName = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${ext}`;
+        const fileName = `${Date.now()}-${index + 1}-${Math.random().toString(36).substring(2, 9)}.${ext}`;
         const filePath = `leads/${fileName}`;
 
-        const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 2500));
+        // Generous 15s timeout to allow all photos to finish uploading over mobile connections
+        const timeoutPromise = new Promise<null>((resolve) => setTimeout(() => resolve(null), 15000));
         const uploadAction = (async (): Promise<string | null> => {
           try {
             const { error: uploadError } = await supabase.storage
@@ -47,9 +48,11 @@ export async function submitScoutLead(
             if (!uploadError) {
               const { data } = supabase.storage.from('scout-photos').getPublicUrl(filePath);
               return data?.publicUrl || null;
+            } else {
+              console.warn(`[Storage upload notice #${index + 1}]:`, uploadError.message);
             }
           } catch (err) {
-            console.warn('[Storage upload notice]:', err);
+            console.warn(`[Storage upload error #${index + 1}]:`, err);
           }
           return null;
         })();
@@ -57,7 +60,7 @@ export async function submitScoutLead(
         return await Promise.race([uploadAction, timeoutPromise]);
       };
 
-      const results = await Promise.all(photos.map((p) => uploadSinglePhoto(p)));
+      const results = await Promise.all(photos.map((p, idx) => uploadSinglePhoto(p, idx)));
       for (const url of results) {
         if (url) uploadedPhotoUrls.push(url);
       }
