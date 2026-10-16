@@ -4,7 +4,21 @@ import React from 'react';
 import Script from 'next/script';
 
 export const MetaPixel: React.FC = () => {
-  const pixelId = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID;
+  const [pixelId, setPixelId] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const hostname = window.location.hostname.toLowerCase();
+    const isZdajAuto = hostname.includes('zdajauto');
+
+    const specificId = isZdajAuto
+      ? process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID_ZDAJAUTO
+      : process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID_AUTOZGLOWY;
+
+    const fallbackId = process.env.NEXT_PUBLIC_FACEBOOK_PIXEL_ID;
+    const resolved = specificId || fallbackId || null;
+    setPixelId(resolved);
+  }, []);
 
   if (!pixelId) {
     return null;
