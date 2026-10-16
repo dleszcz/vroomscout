@@ -1,58 +1,46 @@
 import type { MetadataRoute } from 'next';
+import { headers } from 'next/headers';
 import { SEO_PAGES } from '@/config/seo-pages';
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export const dynamic = 'force-dynamic';
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const currentDate = new Date().toISOString();
   const slugs = Object.keys(SEO_PAGES);
 
-  const autozglowyBase = [
+  let isZdajAuto = false;
+  try {
+    const headersList = await headers();
+    const host = headersList.get('host') || headersList.get('x-forwarded-host') || '';
+    isZdajAuto = host.toLowerCase().includes('zdajauto');
+  } catch {
+    // fallback
+  }
+
+  const domain = isZdajAuto ? 'https://zdajauto.pl' : 'https://autozglowy.pl';
+
+  const baseUrls = [
     {
-      url: 'https://autozglowy.pl',
+      url: domain,
       lastModified: currentDate,
       changeFrequency: 'daily' as const,
       priority: 1.0,
     },
     {
-      url: 'https://autozglowy.pl/obszar-dzialania',
+      url: `${domain}/obszar-dzialania`,
       lastModified: currentDate,
       changeFrequency: 'weekly' as const,
       priority: 0.9,
     },
   ];
 
-  const zdajautoBase = [
-    {
-      url: 'https://zdajauto.pl',
-      lastModified: currentDate,
-      changeFrequency: 'daily' as const,
-      priority: 1.0,
-    },
-    {
-      url: 'https://zdajauto.pl/obszar-dzialania',
-      lastModified: currentDate,
-      changeFrequency: 'weekly' as const,
-      priority: 0.9,
-    },
-  ];
-
-  const autozglowySeoPages = slugs.map((slug) => ({
-    url: `https://autozglowy.pl/${slug}`,
+  const seoPages = slugs.map((slug) => ({
+    url: `${domain}/${slug}`,
     lastModified: currentDate,
     changeFrequency: 'weekly' as const,
     priority: 0.85,
   }));
 
-  const zdajautoSeoPages = slugs.map((slug) => ({
-    url: `https://zdajauto.pl/${slug}`,
-    lastModified: currentDate,
-    changeFrequency: 'weekly' as const,
-    priority: 0.85,
-  }));
-
-  return [
-    ...autozglowyBase,
-    ...autozglowySeoPages,
-    ...zdajautoBase,
-    ...zdajautoSeoPages,
-  ];
+  return [...baseUrls, ...seoPages];
 }
+
