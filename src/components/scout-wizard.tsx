@@ -31,6 +31,7 @@ import {
 } from '@/types/scout';
 import { compressImageClientSide } from '@/lib/image-compressor';
 import { submitScoutLead } from '@/lib/lead-submission';
+import { trackMetaLead } from '@/components/meta-pixel';
 import { CAR_DATABASE, ALL_MAKES, YEAR_OPTIONS } from '@/config/cars-database';
 import { validatePhoneNumber } from '@/lib/anti-spam';
 
@@ -360,6 +361,11 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
         setIsSubmitted(true);
         setSubmittedLeadId(result.leadId || '');
         localStorage.removeItem('vroom_scout_draft');
+        trackMetaLead({
+          content_name: `${formData.make || 'Pojazd'} ${formData.model || ''} (${brand.domainName})`.trim(),
+          currency: 'PLN',
+          value: Number(formData.expectedPriceAmount) || 0,
+        });
       } else {
         setErrorMsg(result.error || 'Wystąpił błąd podczas wysyłania zgłoszenia.');
       }

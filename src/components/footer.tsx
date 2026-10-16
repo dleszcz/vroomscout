@@ -30,21 +30,19 @@ export const Footer: React.FC<FooterProps> = ({ brand, onOpenLegal }) => {
           </div>
 
           <div className="flex flex-wrap items-center gap-4 text-xs font-semibold text-slate-600">
-            <button
-              type="button"
-              onClick={() => onOpenLegal('terms')}
+            <Link
+              href="/regulamin"
               className="hover:text-slate-900 underline cursor-pointer"
             >
               Regulamin Serwisu
-            </button>
+            </Link>
             <span>•</span>
-            <button
-              type="button"
-              onClick={() => onOpenLegal('privacy')}
+            <Link
+              href="/polityka-prywatnosci"
               className="hover:text-slate-900 underline cursor-pointer"
             >
               Polityka Prywatności i RODO
-            </button>
+            </Link>
             <span>•</span>
             <a href="#jak-to-dziala" className="hover:text-slate-900">
               Jak to działa
