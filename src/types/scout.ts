@@ -16,8 +16,11 @@ export interface LeadFormState {
   noInsurance: boolean;
   noMot: boolean;
   conditionNotes: string;
+  mileage?: string;
+  enginePower?: string;
   expectedPriceAmount: string;
   isNegotiable: boolean;
+  isListedOnPortals?: boolean;
   priceBracket: PriceBracket | '';
   city: string;
   name: string;

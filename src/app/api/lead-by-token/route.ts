@@ -18,22 +18,63 @@ export async function GET(req: NextRequest) {
 
   try {
     const supabase = createClient(supabaseUrl, supabaseKey);
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(token);
 
     // 1. Query by access_token
-    let { data: lead } = await supabase
-      .from('scout_leads')
-      .select('*')
-      .eq('access_token', token)
-      .maybeSingle();
-
-    // 2. Query by UUID id
-    if (!lead) {
-      const { data: leadById } = await supabase
+    let lead = null;
+    try {
+      const { data } = await supabase
         .from('scout_leads')
         .select('*')
-        .eq('id', token)
+        .eq('access_token', token)
         .maybeSingle();
-      lead = leadById;
+      if (data) lead = data;
+    } catch {
+      // ignore
+    }
+
+    // 2. Short prefix match for old 36-char leads (e.g. token '3f450a84' matches '3f450a84-2517-4d9b...')
+    if (!lead && token.length >= 6 && token.length <= 12) {
+      try {
+        const { data } = await supabase
+          .from('scout_leads')
+          .select('*')
+          .ilike('access_token', `${token}%`)
+          .limit(1)
+          .maybeSingle();
+        if (data) lead = data;
+      } catch {
+        // ignore
+      }
+    }
+
+    // 3. Backward match: if someone clicks old 36-char link after DB was shortened to 8 chars
+    if (!lead && isUuid) {
+      try {
+        const shortPart = token.substring(0, 8);
+        const { data } = await supabase
+          .from('scout_leads')
+          .select('*')
+          .eq('access_token', shortPart)
+          .maybeSingle();
+        if (data) lead = data;
+      } catch {
+        // ignore
+      }
+    }
+
+    // 4. Query by UUID id (only if token is a valid UUID)
+    if (!lead && isUuid) {
+      try {
+        const { data: leadById } = await supabase
+          .from('scout_leads')
+          .select('*')
+          .eq('id', token)
+          .maybeSingle();
+        lead = leadById;
+      } catch {
+        // ignore
+      }
     }
 
     if (!lead) {

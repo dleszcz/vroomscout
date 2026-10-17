@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Car,
   Truck,
@@ -15,6 +15,7 @@ import {
   RefreshCw,
   Clock,
   Zap,
+  Gauge,
   ChevronDown,
   Check,
   FileText,
@@ -35,6 +36,60 @@ import { trackMetaLead } from '@/components/meta-pixel';
 import { CAR_DATABASE, ALL_MAKES, YEAR_OPTIONS } from '@/config/cars-database';
 import { validatePhoneNumber } from '@/lib/anti-spam';
 
+function getPopularHorsepowers(make: string, model: string, fuel: string, category: string): string[] {
+  const normMake = (make || '').toLowerCase();
+  const normModel = (model || '').toLowerCase();
+
+  // Dostawcze / busy
+  if (category === 'bus') {
+    return ['100', '120', '130', '140', '150', '163', '177'];
+  }
+
+  // Małe auta miejskie
+  if (
+    normModel.includes('corsa') ||
+    normModel.includes('clio') ||
+    normModel.includes('polo') ||
+    normModel.includes('fiesta') ||
+    normModel.includes('fabia') ||
+    normModel.includes('yaris') ||
+    normModel.includes('500') ||
+    normModel.includes('punto') ||
+    normModel.includes('micra') ||
+    normModel.includes('ibiza') ||
+    normModel.includes('aygo') ||
+    normModel.includes('up')
+  ) {
+    return ['60', '75', '85', '90', '100', '115'];
+  }
+
+  // Premium / mocniejsze marki
+  if (
+    normMake.includes('bmw') ||
+    normMake.includes('audi') ||
+    normMake.includes('mercedes') ||
+    normMake.includes('volvo') ||
+    normMake.includes('porsche') ||
+    normMake.includes('lexus') ||
+    normMake.includes('jaguar')
+  ) {
+    return ['143', '150', '170', '177', '190', '218', '245', '286'];
+  }
+
+  // Hybrydy i elektryki
+  if (fuel === 'hybryda_elektryk') {
+    return ['122', '136', '152', '180', '204', '225'];
+  }
+
+  // Diesle
+  if (fuel === 'diesel') {
+    return ['90', '105', '110', '120', '140', '150', '170', '190'];
+  }
+
+  // Standardowe benzynowe
+  return ['90', '105', '115', '125', '140', '150', '170', '180'];
+}
+
 interface ScoutWizardProps {
   brand: BrandConfig;
   onOpenLegal: (tab: 'terms' | 'privacy') => void;
@@ -50,12 +105,15 @@ const INITIAL_FORM: LeadFormState = {
   makeAndModel: '',
   year: '2014',
   fuel: 'diesel',
+  mileage: '',
+  enginePower: '',
   condition: 'bardzo_dobry',
   noInsurance: false,
   noMot: false,
   conditionNotes: '',
   expectedPriceAmount: '',
   isNegotiable: true,
+  isListedOnPortals: false,
   priceBracket: '',
   city: '',
   name: '',
@@ -183,6 +241,15 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
   const filteredModels = availableModels.filter((mod) =>
     mod.toLowerCase().includes((modelQuery || '').toLowerCase().trim())
   );
+
+  const suggestedPowers = useMemo(() => {
+    return getPopularHorsepowers(
+      formData.make || makeQuery,
+      formData.model || modelQuery,
+      formData.fuel,
+      formData.category
+    );
+  }, [formData.make, makeQuery, formData.model, modelQuery, formData.fuel, formData.category]);
 
   const handleSelectMake = (makeName: string) => {
     setMakeQuery(makeName);
@@ -739,6 +806,91 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
                     })}
                   </div>
                 </div>
+
+                {/* OPCJONALNE POLA: PRZEBIEG I MOC SILNIKA */}
+                <div className="pt-2 border-t border-slate-100 space-y-3.5">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                      <Gauge className="w-3.5 h-3.5 text-slate-400" /> Dodatkowe dane pojazdu
+                    </span>
+                    <span className="text-[11px] font-semibold text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">
+                      Opcjonalne
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* PRZEBIEG */}
+                    <div>
+                      <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-700 mb-2">
+                        Przebieg (km)
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="np. 185 000"
+                          value={formData.mileage || ''}
+                          onChange={(e) => {
+                            const raw = e.target.value.replace(/\D/g, '');
+                            const formatted = raw ? Number(raw).toLocaleString('pl-PL') : '';
+                            updateField('mileage', formatted);
+                          }}
+                          className="w-full h-12 sm:h-14 px-4 pr-12 rounded-2xl border-2 border-slate-200 bg-white text-slate-900 font-bold text-base focus:border-slate-900 focus:outline-none transition-colors"
+                        />
+                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">
+                          km
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* MOC SILNIKA */}
+                    <div>
+                      <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-700 mb-2">
+                        Moc silnika (KM)
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          placeholder="np. 150"
+                          value={formData.enginePower || ''}
+                          onChange={(e) => {
+                            const raw = e.target.value.replace(/\D/g, '');
+                            updateField('enginePower', raw);
+                          }}
+                          className="w-full h-12 sm:h-14 px-4 pr-12 rounded-2xl border-2 border-slate-200 bg-white text-slate-900 font-bold text-base focus:border-slate-900 focus:outline-none transition-colors"
+                        />
+                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">
+                          KM
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* SUGESTIE MOCY SILNIKA DLA WYBRANEJ MARKI/MODELU */}
+                  <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                    <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1 mr-0.5">
+                      <Zap className="w-3 h-3 text-amber-500" /> Szybki wybór KM:
+                    </span>
+                    {suggestedPowers.map((hp) => {
+                      const isSelected = formData.enginePower === hp;
+                      return (
+                        <button
+                          key={hp}
+                          type="button"
+                          onClick={() => updateField('enginePower', isSelected ? '' : hp)}
+                          className={`px-2.5 py-1 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                            isSelected
+                              ? `${brand.primaryBgClass} text-white shadow-xs scale-105 font-extrabold`
+                              : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                          }`}
+                        >
+                          {hp} KM
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
               </div>
             )}
 
@@ -929,6 +1081,21 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
                         Wyczyść kwotę
                       </button>
                     )}
+                  </div>
+
+                  {/* CHECKBOX: PORTALE OGŁOSZENIOWE (OLX / OTOMOTO) */}
+                  <div className="pt-3 border-t border-slate-200/80">
+                    <label className="flex items-center gap-2.5 cursor-pointer select-none">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(formData.isListedOnPortals)}
+                        onChange={(e) => updateField('isListedOnPortals', e.target.checked)}
+                        className="w-4 h-4 rounded border-slate-300 text-slate-900 focus:ring-slate-900 shrink-0"
+                      />
+                      <span className="text-xs sm:text-sm font-semibold text-slate-800">
+                        Auto jest już wystawione na portalach ogłoszeniowych (np. OLX / Otomoto)
+                      </span>
+                    </label>
                   </div>
 
                   {/* Transparent educational callout (Retail vs Trade Buyout) */}

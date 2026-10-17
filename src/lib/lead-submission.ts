@@ -9,6 +9,24 @@ export interface SubmitLeadResult {
   error?: string;
 }
 
+export function generateShortToken(length = 8): string {
+  // 30 characters: easy to read, no confusing 0/O or 1/l/I
+  const chars = '23456789abcdefghjkmnpqrstuvwxyz';
+  let result = '';
+  if (typeof crypto !== 'undefined' && crypto.getRandomValues) {
+    const bytes = new Uint8Array(length);
+    crypto.getRandomValues(bytes);
+    for (let i = 0; i < length; i++) {
+      result += chars[bytes[i] % chars.length];
+    }
+    return result;
+  }
+  for (let i = 0; i < length; i++) {
+    result += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return result;
+}
+
 export async function submitScoutLead(
   formData: LeadFormState,
   domainName: string,
@@ -69,7 +87,8 @@ export async function submitScoutLead(
     }
   }
 
-  const generatedToken = crypto.randomUUID();
+  // Generate clean 8-character token (backward-compatible with 36-char UUIDs)
+  let generatedToken = generateShortToken(8);
   const userAgent = typeof navigator !== 'undefined' ? navigator.userAgent : 'Unknown Browser';
 
   // 2. Direct client insert into Supabase if configured with RLS
@@ -83,7 +102,20 @@ export async function submitScoutLead(
         `${formData.make} ${formData.model}`
       ).trim() || 'Pojazd';
 
+      const specsPart = [
+        formData.mileage ? `Przebieg: ${formData.mileage.trim()} km` : '',
+        formData.enginePower ? `Moc: ${formData.enginePower.trim()} KM` : '',
+      ]
+        .filter(Boolean)
+        .join(' | ');
+
+      const portalsStatus = formData.isListedOnPortals
+        ? '📢 Wystawione na portalach (OLX/Otomoto)'
+        : '💎 Tylko w VroomScout (Off-market / bez ogłoszenia)';
+
       const conditionNotesFormatted = [
+        specsPart,
+        portalsStatus,
         formData.conditionNotes.trim(),
         formData.noInsurance ? '⚠️ BRAK WAŻNEGO OC' : '',
         formData.noMot ? '⚠️ BRAK WAŻNEGO PRZEGLĄDU' : '',
@@ -136,6 +168,42 @@ export async function submitScoutLead(
         finalLeadId = (data as any).id;
       } else if (error) {
         console.warn('[Supabase client insert notice]:', error.message);
+        // If Postgres column is still strictly UUID, retry with crypto.randomUUID()
+        if (error.message?.includes('uuid')) {
+          const fallbackUuid = crypto.randomUUID();
+          const { data: retryData, error: retryErr } = await supabase
+            .from('scout_leads')
+            .insert([
+              {
+                access_token: fallbackUuid,
+                source_domain: domainName,
+                category: formData.category || 'osobowe',
+                make_model: vehicleTitle,
+                year: Number(formData.year) || 2012,
+                fuel: formData.fuel || 'diesel',
+                condition: formData.condition || 'bardzo_dobry',
+                condition_notes: conditionNotesFormatted || null,
+                price_bracket: calculatedPriceString,
+                city: formData.city.trim() || 'Polska',
+                customer_name: formData.name.trim() || 'Klient (Anonimowy)',
+                customer_phone: formData.phone.trim(),
+                photo_urls: uploadedPhotoUrls,
+                consent_data_sharing: formData.consentDataSharing,
+                consent_phone_contact: formData.consentPhoneContact,
+                accepted_terms_version: 'v1.0-2026-10',
+                user_agent: userAgent,
+                status: 'new',
+              },
+            ])
+            .select('id, access_token')
+            .single();
+
+          if (!retryErr && retryData) {
+            directInsertSuccess = true;
+            finalLeadId = (retryData as any).id;
+            generatedToken = fallbackUuid;
+          }
+        }
       }
     } catch (err) {
       console.warn('[Supabase client insert failed]:', err);

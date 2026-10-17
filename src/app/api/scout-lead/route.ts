@@ -85,8 +85,11 @@ export async function POST(req: NextRequest) {
       noInsurance,
       noMot,
       conditionNotes,
+      mileage,
+      enginePower,
       expectedPriceAmount,
       isNegotiable,
+      isListedOnPortals,
       priceBracket,
       city,
       name,
@@ -129,7 +132,20 @@ export async function POST(req: NextRequest) {
       ? `${expectedPriceAmount} zł (${isNegotiable !== false ? 'do negocjacji' : 'sztywna'})`
       : priceBracket || 'Czeka na propozycję wyceny';
 
+    const specsPart = [
+      mileage ? `Przebieg: ${String(mileage).trim()} km` : '',
+      enginePower ? `Moc: ${String(enginePower).trim()} KM` : '',
+    ]
+      .filter(Boolean)
+      .join(' | ');
+
+    const portalsStatus = isListedOnPortals
+      ? '📢 Wystawione na portalach (OLX/Otomoto)'
+      : '💎 Tylko w VroomScout (Off-market / bez ogłoszenia)';
+
     const conditionNotesFormatted = [
+      specsPart,
+      portalsStatus,
       conditionNotes ? conditionNotes.trim() : '',
       noInsurance ? '⚠️ BRAK WAŻNEGO OC' : '',
       noMot ? '⚠️ BRAK WAŻNEGO PRZEGLĄDU' : '',
@@ -148,11 +164,12 @@ export async function POST(req: NextRequest) {
       try {
         const supabase = createClient(supabaseUrl, supabaseKey);
 
-        const { error: scoutErr } = await supabase
+        let effectiveToken = accessToken || crypto.randomUUID();
+        let { error: scoutErr } = await supabase
           .from('scout_leads')
           .insert([
             {
-              access_token: accessToken || crypto.randomUUID(),
+              access_token: effectiveToken,
               source_domain: sourceDomain || 'AutoZglowy.pl',
               category: category || 'osobowe',
               make_model: vehicleTitle,
@@ -172,6 +189,36 @@ export async function POST(req: NextRequest) {
               status: 'new',
             },
           ]);
+
+        if (scoutErr && scoutErr.message?.includes('uuid')) {
+          console.warn('[Supabase scout_leads note]: Retrying with standard UUID as column is still UUID typed');
+          effectiveToken = crypto.randomUUID();
+          const retry = await supabase
+            .from('scout_leads')
+            .insert([
+              {
+                access_token: effectiveToken,
+                source_domain: sourceDomain || 'AutoZglowy.pl',
+                category: category || 'osobowe',
+                make_model: vehicleTitle,
+                year: Number(year) || 2012,
+                fuel: fuel || 'diesel',
+                condition: condition || 'bardzo_dobry',
+                condition_notes: conditionNotesFormatted || null,
+                price_bracket: priceDisplayString,
+                city: city || 'Polska',
+                customer_name: name || 'Klient (Anonimowy)',
+                customer_phone: phoneCheck.formattedPhone,
+                photo_urls: photoUrls,
+                consent_data_sharing: true,
+                consent_phone_contact: true,
+                accepted_terms_version: 'v1.0-2026-10',
+                user_agent: userAgent || null,
+                status: 'new',
+              },
+            ]);
+          scoutErr = retry.error;
+        }
 
         if (scoutErr) {
           console.warn('[Supabase scout_leads note]:', scoutErr.message);
@@ -197,7 +244,12 @@ export async function POST(req: NextRequest) {
 
     // Construct partner lead URL (localhost on dev, scout.vroomdealer.pl on prod)
     const host = req.headers.get('host') || 'localhost:3003';
-    const isLocal = host.includes('localhost') || host.includes('127.0.0.1');
+    const isLocal =
+      host.includes('localhost') ||
+      host.includes('127.0.0.1') ||
+      host.startsWith('192.168.') ||
+      host.startsWith('10.') ||
+      process.env.NODE_ENV !== 'production';
 
     const defaultLocalUrl = process.env.SCOUT_PARTNER_LOCAL_URL || 'http://localhost:3000';
     const defaultProdUrl = process.env.SCOUT_PARTNER_BASE_URL || 'https://scout.vroomdealer.pl';
@@ -207,7 +259,7 @@ export async function POST(req: NextRequest) {
     if (!isLocal && partnerBaseUrl.includes('vroomdealer.pl') && !partnerBaseUrl.includes('scout.')) {
       partnerBaseUrl = 'https://scout.vroomdealer.pl';
     }
-    const partnerLeadUrl = accessToken ? `${partnerBaseUrl.replace(/\/$/, '')}/lead/${accessToken}` : '';
+    const partnerLeadUrl = accessToken ? `${partnerBaseUrl.replace(/\/$/, '')}/${accessToken}` : '';
 
     // 2. Local persistent file backup (never lose a lead)
     try {
@@ -221,6 +273,9 @@ export async function POST(req: NextRequest) {
         sourceDomain,
         vehicleTitle,
         year,
+        mileage: mileage || null,
+        enginePower: enginePower || null,
+        isListedOnPortals: Boolean(isListedOnPortals),
         fuel,
         condition,
         noInsurance: !!noInsurance,
@@ -252,6 +307,9 @@ export async function POST(req: NextRequest) {
           model: model || '',
           vehicle: vehicleTitle,
           year: year || '',
+          mileage: mileage ? `${mileage} km` : '',
+          enginePower: enginePower ? `${enginePower} KM` : '',
+          isListedOnPortals: isListedOnPortals ? 'TAK (OLX/Otomoto)' : 'NIE (Off-market)',
           fuel: fuel || '',
           condition: condition || '',
           noInsurance: noInsurance ? 'TAK (brak OC - laweta)' : 'NIE (OC ważne)',
@@ -269,15 +327,20 @@ export async function POST(req: NextRequest) {
           browser: deviceInfo.browser,
           os: deviceInfo.os,
           fillTimeSec: fillTimeSec,
-          tokenUrl: partnerLeadUrl || (accessToken ? `/lead/${accessToken}` : ''),
+          tokenUrl: partnerLeadUrl || (accessToken ? `/${accessToken}` : ''),
         }
       : null;
 
-    // B. Resend Email notification
+    // B. Resend Email notification (disabled on localhost to conserve monthly quota)
     const resendApiKey = process.env.RESEND_API_KEY;
     const notificationEmail = process.env.NOTIFICATION_EMAIL || 'danielxleszczynski@gmail.com';
+    const shouldSendEmail = Boolean(resendApiKey && !isLocal);
 
-    if (resendApiKey) {
+    if (resendApiKey && isLocal) {
+      console.log('📧 [Localhost] Pomijanie wysyłki e-maila Resend na środowisku lokalnym (oszczędzanie limitu konta)');
+    }
+
+    if (shouldSendEmail) {
       const isZdajAuto = sourceDomain?.toLowerCase().includes('zdajauto');
       const brandBgColor = isZdajAuto ? '#7c3aed' : '#fdac04';
       const brandHeaderTextColor = isZdajAuto ? '#ffffff' : '#0f172a';
@@ -357,6 +420,22 @@ export async function POST(req: NextRequest) {
                 <td style="padding:6px 0;color:#64748b;">Rocznik:</td>
                 <td style="padding:6px 0;font-weight:600;">${year}</td>
               </tr>
+              ${
+                mileage
+                  ? `<tr>
+                      <td style="padding:6px 0;color:#64748b;">Przebieg:</td>
+                      <td style="padding:6px 0;font-weight:bold;color:#0f172a;font-family:monospace;">${mileage} km</td>
+                    </tr>`
+                  : ''
+              }
+              ${
+                enginePower
+                  ? `<tr>
+                      <td style="padding:6px 0;color:#64748b;">Moc silnika:</td>
+                      <td style="padding:6px 0;font-weight:bold;color:#0f172a;font-family:monospace;">${enginePower} KM</td>
+                    </tr>`
+                  : ''
+              }
               <tr>
                 <td style="padding:6px 0;color:#64748b;">Paliwo:</td>
                 <td style="padding:6px 0;font-weight:600;text-transform:capitalize;">${fuel}</td>
@@ -375,6 +454,12 @@ export async function POST(req: NextRequest) {
                 <td style="padding:6px 0;color:#64748b;">Badanie techniczne:</td>
                 <td style="padding:6px 0;font-weight:bold;color:${noMot ? '#b91c1c' : '#15803d'};">
                   ${noMot ? '⚠️ BRAK PRZEGLĄDU' : '✅ Ważny przegląd'}
+                </td>
+              </tr>
+              <tr>
+                <td style="padding:6px 0;color:#64748b;">Status na portalach:</td>
+                <td style="padding:6px 0;font-weight:bold;color:${isListedOnPortals ? '#b45309' : '#15803d'};">
+                  ${isListedOnPortals ? '📢 Wystawione na portalach (OLX/Otomoto)' : '💎 Tylko u nas (Off-market / bez ogłoszenia)'}
                 </td>
               </tr>
               ${
