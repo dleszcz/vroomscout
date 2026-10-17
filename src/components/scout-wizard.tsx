@@ -33,7 +33,7 @@ import {
 import { compressImageClientSide } from '@/lib/image-compressor';
 import { submitScoutLead } from '@/lib/lead-submission';
 import { trackMetaLead } from '@/components/meta-pixel';
-import { CAR_DATABASE, ALL_MAKES, YEAR_OPTIONS } from '@/config/cars-database';
+import { getMakesForCategory, getModelsForMake, YEAR_OPTIONS } from '@/config/cars-database';
 import { validatePhoneNumber } from '@/lib/anti-spam';
 
 function getPopularHorsepowers(make: string, model: string, fuel: string, category: string): string[] {
@@ -165,42 +165,14 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
 
   const totalSteps = 4;
 
-  // 1. Silently restore draft on mount
+  // Ensure any old cached draft is cleared so every visit/refresh starts with a fresh, clean form
   useEffect(() => {
     try {
-      const saved = localStorage.getItem('vroom_scout_draft');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (parsed && typeof parsed === 'object') {
-          queueMicrotask(() => {
-            setFormData((prev) => ({
-              ...prev,
-              ...parsed,
-              ...(initialCity ? { city: initialCity } : {}),
-              ...(initialCondition ? { condition: initialCondition } : {}),
-              ...(initialCategory ? { category: initialCategory } : {}),
-              consentDataSharing: Boolean(parsed.consentDataSharing),
-              consentPhoneContact: Boolean(parsed.consentPhoneContact),
-            }));
-            if (parsed.make) setMakeQuery(parsed.make);
-            if (parsed.model) setModelQuery(parsed.model);
-          });
-        }
-      }
+      localStorage.removeItem('vroom_scout_draft');
     } catch {
       // ignore
     }
-  }, [initialCategory, initialCity, initialCondition]);
-
-  // 2. Persist draft changes
-  useEffect(() => {
-    if (isSubmitted) return;
-    try {
-      localStorage.setItem('vroom_scout_draft', JSON.stringify(formData));
-    } catch {
-      // ignore
-    }
-  }, [formData, isSubmitted]);
+  }, []);
 
   // Close autocomplete dropdowns on outside click
   useEffect(() => {
@@ -228,16 +200,23 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  // Filtered makes list
-  const filteredMakes = ALL_MAKES.filter((m) =>
+  // Available makes for the active category (osobowe vs bus)
+  const categoryMakes = useMemo(() => {
+    return getMakesForCategory(formData.category === 'bus' ? 'bus' : 'osobowe');
+  }, [formData.category]);
+
+  const filteredMakes = categoryMakes.filter((m) =>
     m.toLowerCase().includes((makeQuery || '').toLowerCase().trim())
   );
 
-  // Available models for currently selected or typed make
-  const matchedMakeKey = ALL_MAKES.find(
-    (m) => m.toLowerCase() === (formData.make || makeQuery || '').toLowerCase().trim()
-  );
-  const availableModels = matchedMakeKey ? CAR_DATABASE[matchedMakeKey] || [] : [];
+  // Available models for currently selected or typed make within this category
+  const availableModels = useMemo(() => {
+    return getModelsForMake(
+      formData.make || makeQuery,
+      formData.category === 'bus' ? 'bus' : 'osobowe'
+    );
+  }, [formData.make, makeQuery, formData.category]);
+
   const filteredModels = availableModels.filter((mod) =>
     mod.toLowerCase().includes((modelQuery || '').toLowerCase().trim())
   );
@@ -636,7 +615,16 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
                 <div className="grid grid-cols-2 gap-2.5 p-1 bg-slate-100 rounded-2xl">
                   <button
                     type="button"
-                    onClick={() => updateField('category', 'osobowe')}
+                    onClick={() => {
+                      if (formData.category !== 'osobowe') {
+                        updateField('category', 'osobowe');
+                        setMakeQuery('');
+                        setModelQuery('');
+                        updateField('make', '');
+                        updateField('model', '');
+                        updateField('makeAndModel', '');
+                      }
+                    }}
                     className={`py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer ${
                       formData.category !== 'bus'
                         ? 'bg-white text-slate-900 shadow-sm'
@@ -648,7 +636,16 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
                   </button>
                   <button
                     type="button"
-                    onClick={() => updateField('category', 'bus')}
+                    onClick={() => {
+                      if (formData.category !== 'bus') {
+                        updateField('category', 'bus');
+                        setMakeQuery('');
+                        setModelQuery('');
+                        updateField('make', '');
+                        updateField('model', '');
+                        updateField('makeAndModel', '');
+                      }
+                    }}
                     className={`py-2.5 px-3 rounded-xl font-bold text-xs sm:text-sm flex items-center justify-center gap-2 transition-all cursor-pointer ${
                       formData.category === 'bus'
                         ? 'bg-white text-slate-900 shadow-sm'
@@ -670,7 +667,11 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
                     <div className="relative">
                       <input
                         type="text"
-                        placeholder="np. Volkswagen, Audi, Ford..."
+                        placeholder={
+                          formData.category === 'bus'
+                            ? 'np. Fiat, Renault, Iveco, Ford...'
+                            : 'np. Volkswagen, Audi, BMW, Ford...'
+                        }
                         value={makeQuery || formData.make}
                         onChange={(e) => {
                           const val = e.target.value;
@@ -713,8 +714,10 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
                         type="text"
                         placeholder={
                           formData.make
-                            ? `Model dla ${formData.make} (np. Passat, Golf)`
-                            : 'Wpisz model...'
+                            ? `Model dla ${formData.make}`
+                            : formData.category === 'bus'
+                            ? 'np. Ducato, Master, Sprinter, Daily...'
+                            : 'np. Golf, Passat, A4, Seria 3...'
                         }
                         value={modelQuery || formData.model}
                         onChange={(e) => {

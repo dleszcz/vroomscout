@@ -1,9 +1,10 @@
 // Comprehensive database of car makes and models for autocomplete
+// Separated into Passenger Cars & SUVs and Commercial Vans & Buses
 export interface CarDatabase {
   [make: string]: string[];
 }
 
-export const CAR_DATABASE: CarDatabase = {
+export const PASSENGER_CAR_DATABASE: CarDatabase = {
   Volkswagen: [
     'Golf',
     'Passat',
@@ -12,11 +13,9 @@ export const CAR_DATABASE: CarDatabase = {
     'Touran',
     'Touareg',
     'Arteon',
-    'Caddy',
-    'Transporter / T5 / T6',
-    'Crafter',
     'T-Roc',
     'T-Cross',
+    'Caddy',
     'Sharan',
     'Up!',
     'Bora',
@@ -24,7 +23,8 @@ export const CAR_DATABASE: CarDatabase = {
     'Scirocco',
     'Jetta',
     'CC',
-    'Amarok',
+    'Taigo',
+    'ID.3 / ID.4 / ID.5',
   ],
   Audi: [
     'A3',
@@ -44,6 +44,7 @@ export const CAR_DATABASE: CarDatabase = {
     'A4 Allroad',
     'A6 Allroad',
     'Q2',
+    'e-tron',
   ],
   BMW: [
     'Seria 3 (E46 / E90 / F30 / G20)',
@@ -59,40 +60,38 @@ export const CAR_DATABASE: CarDatabase = {
     'Seria 6',
     'X4',
     'X7',
+    'i3 / i4',
   ],
   'Mercedes-Benz': [
-    'Klasa C (W203 / W204 / W205)',
+    'Klasa C (W203 / W204 / W205 / W206)',
     'Klasa E (W211 / W212 / W213)',
     'Klasa A',
-    'Sprinter',
     'Klasa S',
     'GLA',
     'GLC',
     'GLE / ML',
     'CLA',
-    'Vito / Viano / Klasa V',
-    'W124',
     'Klasa B',
     'GLK',
     'CLS',
-    'Citan',
+    'W124',
+    'GLS / GL',
+    'EQA / EQB / EQC',
   ],
   Ford: [
     'Focus',
     'Mondeo',
     'Fiesta',
     'Kuga',
-    'Transit',
-    'Transit Custom',
-    'Transit Connect',
     'C-Max',
     'S-Max',
-    'Ranger',
+    'Puma',
     'EcoSport',
     'Galaxy',
     'Ka',
     'Fusion',
-    'Puma',
+    'Edge',
+    'Mustang',
   ],
   Opel: [
     'Astra',
@@ -100,17 +99,14 @@ export const CAR_DATABASE: CarDatabase = {
     'Insignia',
     'Zafira',
     'Meriva',
-    'Mokka',
+    'Mokka / Mokka X',
     'Vectra',
-    'Vivaro',
-    'Movano',
-    'Combo',
     'Adam',
-    'Tigra',
-    'Signum',
-    'Antara',
     'Crossland X',
     'Grandland X',
+    'Signum',
+    'Tigra',
+    'Antara',
   ],
   Toyota: [
     'Yaris',
@@ -119,15 +115,13 @@ export const CAR_DATABASE: CarDatabase = {
     'RAV4',
     'Auris',
     'C-HR',
-    'Aygo',
+    'Aygo / Aygo X',
     'Camry',
-    'Hilux',
     'Prius',
-    'Proace',
-    'Proace City',
+    'Yaris Cross',
+    'Corolla Cross',
     'Land Cruiser',
     'Verso',
-    'Yaris Cross',
   ],
   Skoda: [
     'Octavia',
@@ -137,19 +131,17 @@ export const CAR_DATABASE: CarDatabase = {
     'Kamiq',
     'Karoq',
     'Rapid',
+    'Scala',
     'Citigo',
     'Yeti',
     'Roomster',
-    'Scala',
+    'Enyaq',
   ],
   Renault: [
     'Megane',
     'Clio',
     'Laguna',
     'Scenic / Grand Scenic',
-    'Master',
-    'Trafic',
-    'Kangoo',
     'Captur',
     'Kadjar',
     'Koleos',
@@ -157,7 +149,9 @@ export const CAR_DATABASE: CarDatabase = {
     'Espace',
     'Twingo',
     'Modus',
-    'Thalia',
+    'Arkana',
+    'Austral',
+    'Zoe',
   ],
   Peugeot: [
     '206',
@@ -170,27 +164,25 @@ export const CAR_DATABASE: CarDatabase = {
     '2008',
     '3008',
     '5008',
-    'Partner',
-    'Boxer',
-    'Expert',
     'Rifter',
     '107',
     '108',
+    '301',
+    '406',
   ],
   Citroen: [
     'C3',
     'C4',
     'C5',
-    'Berlingo',
+    'Berlingo Multispace',
     'C3 Aircross',
     'C4 Picasso / Grand Picasso',
     'C4 Cactus',
-    'Jumper',
-    'Jumpy',
+    'C5 Aircross',
     'C1',
     'C2',
     'Xsara Picasso',
-    'C5 Aircross',
+    'C-Elysee',
   ],
   Hyundai: [
     'i30',
@@ -205,7 +197,7 @@ export const CAR_DATABASE: CarDatabase = {
     'Getz',
     'ix20',
     'Bayon',
-    'H-1 / Staria',
+    'Ioniq / Ioniq 5',
   ],
   Kia: [
     'Ceed',
@@ -221,17 +213,15 @@ export const CAR_DATABASE: CarDatabase = {
     'Niro',
     'XCeed',
     'Soul',
+    'EV6',
   ],
   Fiat: [
-    'Ducato',
     'Punto / Grande Punto',
-    '500',
     'Tipo',
+    '500 / 500X / 500L',
     'Panda',
-    'Doblo',
     'Bravo',
-    'Fiorino',
-    'Scudo',
+    'Doblo Panorama',
     'Freemont',
     'Sedici',
     'Seicento',
@@ -268,14 +258,13 @@ export const CAR_DATABASE: CarDatabase = {
     'Juke',
     'X-Trail',
     'Micra',
-    'Navara',
     'Note',
     'Almera',
     'Primera',
-    'NV200 / NV400',
     'Patrol',
     'Leaf',
     'Tiida',
+    'Pulsar',
   ],
   Mazda: [
     '6',
@@ -302,21 +291,21 @@ export const CAR_DATABASE: CarDatabase = {
   ],
   Dacia: [
     'Duster',
-    'Sandero',
+    'Sandero / Stepway',
     'Logan',
-    'Dokker',
-    'Lodgy',
     'Jogger',
+    'Lodgy',
+    'Dokker',
     'Spring',
   ],
   'Alfa Romeo': [
-    '147',
-    '156',
     '159',
     'Giulietta',
     'MiTo',
     'Giulia',
     'Stelvio',
+    '147',
+    '156',
     'Tonale',
     'Brera',
     'GT',
@@ -339,7 +328,6 @@ export const CAR_DATABASE: CarDatabase = {
     'Lancer',
     'Colt',
     'Pajero',
-    'L200',
     'Space Star',
     'Eclipse Cross',
   ],
@@ -359,13 +347,6 @@ export const CAR_DATABASE: CarDatabase = {
     'Impreza',
     'XV / Crosstrek',
     'Tribeca',
-  ],
-  Iveco: [
-    'Daily (Blaszak / Kontener / Plandeka / Wywrotka)',
-    'Eurocargo',
-  ],
-  MAN: [
-    'TGE',
   ],
   Lexus: [
     'IS',
@@ -426,7 +407,6 @@ export const CAR_DATABASE: CarDatabase = {
     'Sebring',
   ],
   Dodge: [
-    'RAM 1500',
     'Caliber',
     'Journey',
     'Grand Caravan',
@@ -444,7 +424,146 @@ export const CAR_DATABASE: CarDatabase = {
   ],
 };
 
-export const ALL_MAKES = Object.keys(CAR_DATABASE);
+export const VAN_DATABASE: CarDatabase = {
+  Fiat: [
+    'Ducato (Furgon / Blaszak)',
+    'Ducato (Plandeka / Kontener)',
+    'Ducato (Wywrotka / Skrzynia)',
+    'Doblo Cargo',
+    'Fiorino',
+    'Scudo',
+    'Talento',
+  ],
+  Renault: [
+    'Master (Furgon L2 / L3 / L4)',
+    'Master (Plandeka / 8-10 palet)',
+    'Master (Kontener / Winda)',
+    'Trafic (Furgon / Brygadówka)',
+    'Kangoo Express / Van',
+    'Mascott',
+  ],
+  Ford: [
+    'Transit (Furgon / Blaszak)',
+    'Transit Custom',
+    'Transit Connect',
+    'Transit Courier',
+    'Transit (Plandeka / Skrzynia)',
+    'Ranger (Pick-up)',
+  ],
+  'Mercedes-Benz': [
+    'Sprinter (Furgon 313 / 316 / 319)',
+    'Sprinter (Plandeka / Kontener / Winda)',
+    'Sprinter (Laweta / Autotransporter)',
+    'Vito (Furgon / Mixto)',
+    'Citan Van',
+    'Klasa V / Viano',
+    'Vario',
+  ],
+  Volkswagen: [
+    'Crafter (Furgon / Maxi)',
+    'Crafter (Plandeka / Kontener)',
+    'Transporter (T4 / T5 / T6 / T6.1)',
+    'Caddy Van / Maxi',
+    'LT (28 / 35 / 46)',
+    'Amarok (Pick-up)',
+  ],
+  Iveco: [
+    'Daily (Furgon / Blaszak)',
+    'Daily (Plandeka / Międzynarodówka 8-10 palet)',
+    'Daily (Kontener / Winda)',
+    'Daily (Wywrotka / Skrzynia)',
+    'Daily (Autolaweta)',
+    'Eurocargo',
+  ],
+  Peugeot: [
+    'Boxer (Furgon L2 / L3 / L4)',
+    'Boxer (Plandeka / Kontener)',
+    'Partner Van / Furgon',
+    'Expert (Furgon)',
+    'Rifter',
+  ],
+  Citroen: [
+    'Jumper (Furgon L2 / L3 / L4)',
+    'Jumper (Plandeka / Kontener)',
+    'Berlingo Van',
+    'Jumpy',
+    'Nemo',
+  ],
+  Opel: [
+    'Movano (Furgon / Blaszak)',
+    'Movano (Plandeka / Kontener)',
+    'Vivaro (Furgon / Brygadówka)',
+    'Combo Cargo',
+  ],
+  Toyota: [
+    'Proace (Furgon)',
+    'Proace City Van',
+    'Hilux (Pick-up)',
+    'Hiace',
+    'Dyna',
+  ],
+  Nissan: [
+    'NV400 / Interstar',
+    'NV300 / Primastar',
+    'NV200',
+    'Navara (Pick-up)',
+    'Cabstar / NT400',
+  ],
+  MAN: [
+    'TGE (Furgon / Blaszak)',
+    'TGE (Plandeka / Kontener)',
+  ],
+  Hyundai: [
+    'H350',
+    'H-1 Van',
+  ],
+  Mitsubishi: [
+    'L200 (Pick-up)',
+    'Canter / Fuso',
+  ],
+  Isuzu: [
+    'D-Max (Pick-up)',
+    'NPR / N35',
+  ],
+  Dacia: [
+    'Dokker Van',
+  ],
+  Dodge: [
+    'RAM 1500 (Pick-up)',
+  ],
+  Inna: [
+    'Inny dostawczy / bus / pick-up',
+  ],
+};
+
+export const CAR_DATABASES: Record<'osobowe' | 'bus', CarDatabase> = {
+  osobowe: PASSENGER_CAR_DATABASE,
+  bus: VAN_DATABASE,
+};
+
+export function getMakesForCategory(category: 'osobowe' | 'bus'): string[] {
+  const db = CAR_DATABASES[category] || CAR_DATABASES.osobowe;
+  return Object.keys(db);
+}
+
+export function getModelsForMake(make: string, category: 'osobowe' | 'bus'): string[] {
+  const norm = (make || '').toLowerCase().trim();
+  if (!norm) return [];
+
+  const db = CAR_DATABASES[category] || CAR_DATABASES.osobowe;
+  const matchedKey = Object.keys(db).find((k) => k.toLowerCase() === norm);
+  if (matchedKey) return db[matchedKey];
+
+  // Cross-category fallback if user typed a make present in the other category
+  const otherCat = category === 'osobowe' ? 'bus' : 'osobowe';
+  const otherDb = CAR_DATABASES[otherCat];
+  const otherMatchedKey = Object.keys(otherDb).find((k) => k.toLowerCase() === norm);
+  return otherMatchedKey ? otherDb[otherMatchedKey] : [];
+}
+
+// Backward compatibility exports
+export const CAR_DATABASE: CarDatabase = PASSENGER_CAR_DATABASE;
+export const ALL_MAKES: string[] = Object.keys(PASSENGER_CAR_DATABASE);
 
 // Generate year options from current year down to 1990
 const currentYear = new Date().getFullYear();
