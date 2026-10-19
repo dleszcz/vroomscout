@@ -120,7 +120,17 @@ export async function submitScoutLead(
         ? '📢 Wystawione na portalach (OLX/Otomoto)'
         : '💎 Tylko w VroomScout (Off-market / bez ogłoszenia)';
 
+      const urgencyLabel =
+        formData.sellingUrgency === 'asap'
+          ? '⚡ Pilna sprzedaż (1–3 dni)'
+          : formData.sellingUrgency === 'two_weeks'
+          ? '🗓️ Sprzedaż w ciągu 2 tygodni'
+          : formData.sellingUrgency === 'checking_value'
+          ? '🔍 Tylko sprawdza wycenę'
+          : '';
+
       const conditionNotesFormatted = [
+        urgencyLabel,
         specsPart,
         portalsStatus,
         formData.conditionNotes.trim(),

@@ -90,6 +90,7 @@ export async function POST(req: NextRequest) {
       expectedPriceAmount,
       isNegotiable,
       isListedOnPortals,
+      sellingUrgency,
       priceBracket,
       city,
       name,
@@ -154,7 +155,17 @@ export async function POST(req: NextRequest) {
       ? '📢 Wystawione na portalach (OLX/Otomoto)'
       : '💎 Tylko w VroomScout (Off-market / bez ogłoszenia)';
 
+    const urgencyLabel =
+      sellingUrgency === 'asap'
+        ? '⚡ Pilna sprzedaż (1–3 dni)'
+        : sellingUrgency === 'two_weeks'
+        ? '🗓️ Sprzedaż w ciągu 2 tygodni'
+        : sellingUrgency === 'checking_value'
+        ? '🔍 Tylko sprawdza wycenę'
+        : '';
+
     const conditionNotesFormatted = [
+      urgencyLabel,
       specsPart,
       portalsStatus,
       conditionNotes ? conditionNotes.trim() : '',
@@ -473,6 +484,14 @@ export async function POST(req: NextRequest) {
                   ${isListedOnPortals ? '📢 Wystawione na portalach (OLX/Otomoto)' : '💎 Tylko u nas (Off-market / bez ogłoszenia)'}
                 </td>
               </tr>
+              ${
+                urgencyLabel
+                  ? `<tr>
+                      <td style="padding:6px 0;color:#64748b;">Kiedy sprzedaż:</td>
+                      <td style="padding:6px 0;font-weight:bold;color:${sellingUrgency === 'asap' ? '#15803d' : '#0f172a'};">${urgencyLabel}</td>
+                    </tr>`
+                  : ''
+              }
               ${
                 conditionNotes
                   ? `<tr>

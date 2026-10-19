@@ -114,6 +114,7 @@ const INITIAL_FORM: LeadFormState = {
   expectedPriceAmount: '',
   isNegotiable: true,
   isListedOnPortals: false,
+  sellingUrgency: 'asap',
   priceBracket: '',
   city: '',
   name: '',
@@ -1102,6 +1103,53 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
                         Auto jest już wystawione na portalach ogłoszeniowych (np. OLX / Otomoto)
                       </span>
                     </label>
+                  </div>
+
+                  {/* KIEDY PLANUJESZ SPRZEDAŻ (PILNOŚĆ TRANSAKCJI) */}
+                  <div className="pt-3 border-t border-slate-200/80 space-y-2.5">
+                    <label className="block text-xs font-extrabold uppercase tracking-wider text-slate-700">
+                      Kiedy zależy Ci na sprzedaży?
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                      {[
+                        {
+                          id: 'asap',
+                          label: '⚡ Pilnie (1–3 dni)',
+                          desc: 'Zależy mi na natychmiastowej gotówce',
+                        },
+                        {
+                          id: 'two_weeks',
+                          label: '🗓️ W ciągu 2 tygodni',
+                          desc: 'Planuję zmianę w najbliższym czasie',
+                        },
+                        {
+                          id: 'checking_value',
+                          label: '🔍 Tylko sprawdzam',
+                          desc: 'Orientuję się przed decyzją',
+                        },
+                      ].map((item) => {
+                        const isSelected = (formData.sellingUrgency || 'asap') === item.id;
+                        return (
+                          <button
+                            key={item.id}
+                            type="button"
+                            onClick={() => updateField('sellingUrgency', item.id as any)}
+                            className={`p-3 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between ${
+                              isSelected
+                                ? `${brand.primaryBorderClass} ${brand.lightBgClass} shadow-xs`
+                                : 'border-slate-200 bg-white hover:border-slate-300'
+                            }`}
+                          >
+                            <span className="font-extrabold text-xs text-slate-900 block">
+                              {item.label}
+                            </span>
+                            <span className="text-[10px] text-slate-500 mt-1 leading-tight">
+                              {item.desc}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
 
                   {/* Transparent educational callout (Retail vs Trade Buyout) */}

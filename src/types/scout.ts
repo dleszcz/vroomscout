@@ -21,6 +21,7 @@ export interface LeadFormState {
   expectedPriceAmount: string;
   isNegotiable: boolean;
   isListedOnPortals?: boolean;
+  sellingUrgency?: 'asap' | 'two_weeks' | 'checking_value';
   priceBracket: PriceBracket | '';
   city: string;
   name: string;
