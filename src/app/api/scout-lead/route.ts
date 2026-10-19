@@ -121,6 +121,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // 6. Validate photos (required)
+    if (!photoUrls || !Array.isArray(photoUrls) || photoUrls.length === 0) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Wymagane jest załączenie przynajmniej jednego zdjęcia samochodu.',
+        },
+        { status: 400 }
+      );
+    }
+
     const leadId = `scout-${Date.now()}`;
 
     const vehicleTitle = (

@@ -323,7 +323,10 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
     }
 
     if (step === 3) {
-      // Step 3 is price & photos - both optional or flexible
+      if (photos.length === 0) {
+        setErrorMsg('Dodaj przynajmniej 1 zdjęcie samochodu (zdjęcia są wymagane do wyceny).');
+        return false;
+      }
       return true;
     }
 
@@ -1115,11 +1118,11 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
                   </div>
                 </div>
 
-                {/* ZDJĘCIA POJAZDU (OPCJONALNE) */}
+                {/* ZDJĘCIA POJAZDU (WYMAGANE) */}
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <label className="text-xs font-extrabold uppercase tracking-wider text-slate-700">
-                      Zdjęcia samochodu (opcjonalnie, max 6)
+                      Zdjęcia samochodu (wymagane, min. 1, max 6) <span className="text-red-500">*</span>
                     </label>
                     <span className="text-[11px] font-semibold text-slate-400">
                       {photos.length}/6 załączonych
@@ -1127,7 +1130,7 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
                   </div>
 
                   <p className="text-xs text-slate-500">
-                    Zdjęcia nie są obowiązkowe, ale pozwalają partnerowi od razu podać wyższą i pewniejszą kwotę odkupu.
+                    Dodaj przynajmniej 1 zdjęcie auta (np. z zewnątrz lub wnętrze). Zdjęcia są niezbędne do przygotowania rzetelnej wyceny odkupu.
                   </p>
 
                   {/* Photo Thumbnails */}
@@ -1169,7 +1172,11 @@ export const ScoutWizard: React.FC<ScoutWizardProps> = ({
                       />
                       <label
                         htmlFor="wizard-photos-input"
-                        className="border-2 border-dashed border-slate-300 hover:border-slate-400 rounded-2xl p-4 sm:p-5 flex items-center justify-center gap-3 cursor-pointer bg-slate-50/60 hover:bg-slate-50 transition-colors"
+                        className={`border-2 border-dashed rounded-2xl p-4 sm:p-5 flex items-center justify-center gap-3 cursor-pointer transition-colors ${
+                          errorMsg && photos.length === 0
+                            ? 'border-red-400 bg-red-50/50 hover:bg-red-50 text-red-700'
+                            : 'border-slate-300 hover:border-slate-400 bg-slate-50/60 hover:bg-slate-50'
+                        }`}
                       >
                         <Upload className="w-5 h-5 text-slate-500" />
                         <span className="text-xs sm:text-sm font-bold text-slate-700">

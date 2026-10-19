@@ -160,7 +160,7 @@ export const LegalModal: React.FC<LegalModalProps> = ({
                 <p>
                   1. Użytkownik wypełnia formularz wyceny, podając kategorię, markę i model pojazdu, rok
                   produkcji, rodzaj paliwa, orientacyjny stan techniczny, oczekiwaną kwotę, miejscowość,
-                  swoje imię oraz numer telefonu, a opcjonalnie załącza zdjęcia pojazdu.
+                  swoje imię oraz numer telefonu, oraz załącza zdjęcia pojazdu (min. 1 zdjęcie).
                 </p>
                 <p>
                   2. Użytkownik oświadcza, że podane przez niego informacje są zgodne ze stanem

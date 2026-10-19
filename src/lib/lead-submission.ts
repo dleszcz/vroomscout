@@ -36,6 +36,13 @@ export async function submitScoutLead(
     filledDurationMs?: number;
   }
 ): Promise<SubmitLeadResult> {
+  if (!photos || photos.length === 0) {
+    return {
+      success: false,
+      error: 'Dodaj przynajmniej 1 zdjęcie samochodu (zdjęcia są wymagane).',
+    };
+  }
+
   const supabase = getSupabaseClient();
   const uploadedPhotoUrls: string[] = [];
 

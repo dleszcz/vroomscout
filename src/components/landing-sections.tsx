@@ -118,7 +118,7 @@ export const LandingSections: React.FC<LandingSectionsProps> = ({ brand }) => {
             {
               step: '01',
               title: 'Wypełniasz krótki formularz online',
-              desc: 'Podajesz markę, model i rocznik, zaznaczasz orientacyjny stan techniczny i opcjonalnie załączasz zdjęcia z telefonu.',
+              desc: 'Podajesz markę, model i rocznik, zaznaczasz orientacyjny stan techniczny i załączasz zdjęcia auta z telefonu.',
               icon: Clock,
               badge: 'W 100% bezpłatnie',
             },
