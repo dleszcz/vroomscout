@@ -111,6 +111,9 @@ export default async function TermsPage({ searchParams }: PageProps) {
             <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
               2. Zabronione jest wprowadzanie treści o charakterze bezprawnym lub fikcyjnych numerów kontaktowych należących do osób trzecich.
             </p>
+            <p className="text-xs sm:text-sm text-slate-600 leading-relaxed">
+              3. Użytkownik przesyłając zdjęcia pojazdu oświadcza, że posiada do nich pełne prawa oraz przyjmuje do wiadomości, że materiały te zostaną udostępnione współpracującym partnerom handlowym (skupom aut/dealerom) wyłącznie w celu oceny stanu technicznego i przygotowania propozycji odkupu. Użytkownik zobowiązuje się do nieumieszczania na zdjęciach dokumentów osobistych (dowód osobisty, paszport, PESEL), dokumentów zawierających dane osób trzecich ani wizerunku osób fizycznych. Widoczność standardowych tablic rejestracyjnych pojazdu jest dozwolona i służy celom weryfikacji technicznej i historii pojazdu.
+            </p>
           </section>
 
           {/* Section 4 */}

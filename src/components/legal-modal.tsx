@@ -171,6 +171,9 @@ export const LegalModal: React.FC<LegalModalProps> = ({
                   3. Serwis automatycznie kompresuje zdjęcia po stronie urządzenia Użytkownika przed
                   wysyłką, aby umożliwić błyskawiczny transfer nawet przy słabym zasięgu sieci komórkowej.
                 </p>
+                <p>
+                  4. Użytkownik przesyłając zdjęcia pojazdu oświadcza, że posiada do nich pełne prawa i zezwala na ich udostępnienie współpracującym Partnerom (skupom/dealerom) wyłącznie w celu oceny stanu wizualnego i przygotowania propozycji odkupu. Użytkownik zobowiązuje się do nieumieszczania na zdjęciach dokumentów osobistych (dowód osobisty, paszport, PESEL), danych osób trzecich ani wizerunku osób fizycznych. Widoczność standardowych tablic rejestracyjnych pojazdu jest dozwolona i służy celom technicznym oraz weryfikacji historii pojazdu.
+                </p>
               </section>
 
               <section className="space-y-2 border-t border-slate-100 pt-3">
